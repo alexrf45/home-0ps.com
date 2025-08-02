@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Home0ps: A journey of learning through a home lab on Home0ps - My Home Lab Journey</title>
+    <link>//localhost:1313/docs/</link>
+    <description>Recent content in Home0ps: A journey of learning through a home lab on Home0ps - My Home Lab Journey</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 02 Aug 2025 08:35:13 -0400</lastBuildDate>
+    <atom:link href="//localhost:1313/docs/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Introduction</title>
+      <link>//localhost:1313/docs/intro/</link>
+      <pubDate>Sat, 02 Aug 2025 08:35:13 -0400</pubDate>
+      <guid>//localhost:1313/docs/intro/</guid>
+      <description>&lt;p&gt;A home lab represents a lifetime of learning.&lt;/p&gt;&#xA;&lt;p&gt;Problem solving in a micro way with macro implications&lt;/p&gt;&#xA;&lt;p&gt;I strive to build things following these design principles:&#xA;&lt;strong&gt;version control&lt;/strong&gt;, &lt;strong&gt;declarative&lt;/strong&gt;, &lt;strong&gt;transparent&lt;/strong&gt;&lt;/p&gt;&#xA;&lt;h2 id=&#34;version-control&#34;&gt;Version control &lt;a href=&#34;#version-control&#34; class=&#34;anchor&#34; aria-hidden=&#34;true&#34;&gt;&lt;i class=&#34;material-icons align-middle&#34;&gt;link&lt;/i&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Keep everything in version control (yes even secrets,&#xA;just make sure they’re encrypted before committing them to a repo)&lt;/p&gt;&#xA;&lt;p&gt;Being able to revert a breaking change or reclaim an&#xA;old configuration is a game changer in the constant tinkering in a home lab.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

@@ -7,7 +7,7 @@ hero:
   backgroundImage:
     path: "images/templates/hero"
     filename:
-      desktop: "static/homelab.jpg"
+      desktop: "static/home.png"
       mobile: "gradient-mobile.webp"
 
   badge:
@@ -33,7 +33,7 @@ hero:
   cta2Button:
     icon: construction
     btnText: "Source Code Repo"
-    url: "https://github.com/alexrf45/home-ops.git"
+    url: "https://github.com/alexrf45/khepri.git"
   #info: "**Open Source** MIT Licensed."
     #
 imageCompare:

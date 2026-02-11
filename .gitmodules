@@ -1,0 +1,3 @@
+[submodule "site/themes/lotusdocs"]
+	path = site/themes/lotusdocs
+	url = https://github.com/colinwilson/lotusdocs

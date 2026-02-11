@@ -1,0 +1,32 @@
+---
+extends: default
+
+rules:
+  # Kubernetes manifests commonly exceed 80 chars (annotations, images, URLs)
+  line-length:
+    max: 200
+    allow-non-breakable-inline-mappings: true
+
+  # Flux gotk-components and CRDs use inconsistent comment indentation
+  comments:
+    require-starting-space: true
+    ignore-shebangs: true
+    min-spaces-from-content: 1
+
+  comments-indentation: disable
+
+  # Standard indentation for k8s manifests
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+
+  # Allow multiple documents in a single file (common in k8s)
+  document-start: disable
+
+  truthy:
+    allowed-values: ["true", "false", "yes", "no", "on", "off"]
+    check-keys: false
+
+ignore: |
+  .github/
+  clusters/*/flux-system/gotk-components.yaml

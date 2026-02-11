@@ -1,9 +1,9 @@
 variable "env" {
-  description = "Operating env of cluster (dev, test, prod)"
+  description = "Operating environment of cluster (dev, staging, prod)"
   type        = string
   validation {
-    condition     = contains(["dev", "test", "prod"], var.env)
-    error_message = "Please use one of the approved environement names: dev, staging, prod, test"
+    condition     = contains(["dev", "staging", "prod"], var.env)
+    error_message = "Please use one of the approved environment names: dev, staging, prod"
   }
 }
 
@@ -129,5 +129,38 @@ variable "cilium_config" {
     load_balancer_ip           = "192.168.20.100"
     load_balancer_start        = 100
     load_balancer_stop         = 115
+  }
+}
+
+variable "config_export" {
+  description = "Configuration for exporting kubeconfig and talosconfig to local files"
+  type = object({
+    enabled          = optional(bool, true)
+    kubeconfig_path  = string
+    talosconfig_path = string
+  })
+  default = {
+    enabled          = true
+    kubeconfig_path  = "~/.kube/config"
+    talosconfig_path = "~/.talos/config"
+  }
+}
+
+
+variable "worker_labels" {
+  description = "Labels to apply to worker nodes after bootstrap"
+  type = object({
+    enabled = optional(bool, true)
+    labels = optional(map(string), {
+      "node-role.kubernetes.io/worker" = "true"
+      "node"                           = "worker"
+    })
+  })
+  default = {
+    enabled = true
+    labels = {
+      "node-role.kubernetes.io/worker" = "true"
+      "node"                           = "worker"
+    }
   }
 }

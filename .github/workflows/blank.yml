@@ -1,0 +1,33 @@
+---
+name: Lint YAML
+
+on:
+  pull_request:
+    paths:
+      - "**.yaml"
+      - "**.yml"
+      - ".yamllint.yaml"
+  push:
+    branches:
+      - main
+    paths:
+      - "**.yaml"
+      - "**.yml"
+      - ".yamllint.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Run yamllint
+        run: yamllint -c .yamllint.yaml .

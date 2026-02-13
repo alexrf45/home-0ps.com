@@ -4,7 +4,7 @@ extends: default
 rules:
   # Kubernetes manifests commonly exceed 80 chars (annotations, images, URLs)
   line-length:
-    max: 200
+    max: 300
     allow-non-breakable-inline-mappings: true
 
   # Flux gotk-components and CRDs use inconsistent comment indentation

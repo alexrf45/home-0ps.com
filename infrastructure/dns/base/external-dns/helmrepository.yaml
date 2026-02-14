@@ -2,10 +2,10 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: argo
+  name: external-dns
   namespace: flux-system
 spec:
   interval: 24h
-  url: https://argoproj.github.io/argo-helm
+  url: https://kubernetes-sigs.github.io/external-dns/
 
 ---

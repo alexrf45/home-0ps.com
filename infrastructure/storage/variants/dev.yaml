@@ -1,0 +1,40 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: freenas-csi
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./controllers/base/storage/freenas-csi
+  prune: true
+  targetNamespace: storage
+  timeout: 2m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system  # or whatever your git repo source is named
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: truenas-config
+      - kind: Secret
+        name: truenas-credentials
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: local-path
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./controllers/base/storage/local-path
+  prune: true
+  targetNamespace: storage
+  timeout: 2m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system  # or whatever your git repo source is named

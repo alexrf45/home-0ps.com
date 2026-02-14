@@ -1,8 +1,7 @@
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: dev-app-gateway
+  name: ${GATEWAY_NAME}
   namespace: networking
 spec:
   gatewayClassName: cilium
@@ -20,19 +19,18 @@ spec:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        name: wildcard-tls  # Your TLS certificate secret
+        name: wildcard-tls
         namespace: networking
     allowedRoutes:
       namespaces:
         from: Selector
         selector:
           matchLabels:
-            dev-app-gateway: "true"
-            env: "dev"
-            owner: "fr3d"
+            ${GATEWAY_NAME}: "true"
   - name: http-redirect
     protocol: HTTP
     port: 8080
     allowedRoutes:
       namespaces:
         from: All
+

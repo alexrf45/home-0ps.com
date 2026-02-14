@@ -40,7 +40,7 @@ spec:
         kind: HelmRepository
         name: cnpg
         namespace: flux-system
-      interval: 12h
+      interval: 30m
   targetNamespace: database
   values:
     replicaCount: 1

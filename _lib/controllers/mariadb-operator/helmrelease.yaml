@@ -14,7 +14,7 @@ spec:
         kind: HelmRepository
         name: mariadb-operator
         namespace: flux-system
-      interval: 12h
+      interval: 30m
   targetNamespace: mariadb
   values:
 
@@ -34,7 +34,7 @@ spec:
         kind: HelmRepository
         name: mariadb-operator
         namespace: flux-system
-      interval: 12h
+      interval: 30m
   targetNamespace: mariadb
   values:
     crds:

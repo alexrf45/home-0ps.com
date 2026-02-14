@@ -145,23 +145,15 @@ variable "cilium_config" {
   }
 }
 
-
-# Config Export (v3.1.0)
-
 variable "config_export" {
-  description = "Configuration for exporting kubeconfig and talosconfig to local files"
+  description = "Configuration for exporting kubeconfig and talosconfig to onepassword"
   type = object({
-    enabled          = optional(bool, true)
-    kubeconfig_path  = string
-    talosconfig_path = string
+    enabled = optional(bool, true)
   })
   default = {
-    enabled          = true
-    kubeconfig_path  = "~/.kube/config"
-    talosconfig_path = "~/.talos/config"
+    enabled = true
   }
 }
-
 
 variable "worker_labels" {
   description = "Labels to apply to worker nodes after bootstrap"

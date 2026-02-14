@@ -3,6 +3,10 @@ variable "op_vault_id" {
   type        = string
 }
 
+variable "op_service_account_token" {
+  description = "op service account token"
+  type        = string
+}
 variable "env" {
   description = "Operating environment of cluster (dev, staging, prod)"
   type        = string
@@ -138,16 +142,12 @@ variable "cilium_config" {
 }
 
 variable "config_export" {
-  description = "Configuration for exporting kubeconfig and talosconfig to local files"
+  description = "Configuration for exporting kubeconfig and talosconfig to onepassword"
   type = object({
-    enabled          = optional(bool, true)
-    kubeconfig_path  = string
-    talosconfig_path = string
+    enabled = optional(bool, true)
   })
   default = {
-    enabled          = true
-    kubeconfig_path  = "~/.kube/config"
-    talosconfig_path = "~/.talos/config"
+    enabled = true
   }
 }
 
@@ -175,7 +175,6 @@ variable "flux_config" {
   type = object({
     enabled           = bool
     git_url           = string
-    github_token      = string
     cluster_path      = string
     branch            = string
     cluster_domain    = string

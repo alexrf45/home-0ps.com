@@ -35,11 +35,6 @@ spec:
     tty: true
     controller:
       kind: daemonset
-    driver:
-      loader:
-        initContainer:
-          image:
-            pullPolicy: Always
     tolerations:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master

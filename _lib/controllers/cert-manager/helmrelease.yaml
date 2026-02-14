@@ -24,7 +24,7 @@ spec:
   targetNamespace: cert-manager
   values:
     global:
-      fullnameOverride: "dev-cert-manager"
+      fullnameOverride: "${CLUSTER_NAME}-cert-manager"
       nodeSelector:
         node: "worker"
       logLevel: 4
@@ -39,9 +39,9 @@ spec:
         cpu: 100m
         memory: 50Mi
     podLabels:
-      env: "dev"
+      env: "${ENVIRONMENT}"
       app: "cert-manager"
-      owner: "fr3d"
+      owner: "${OWNER}"
     leaderElection:
       namespace: "cert-manager"
     image:

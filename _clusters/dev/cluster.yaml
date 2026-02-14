@@ -52,6 +52,27 @@ spec:
       name: external-secrets
       namespace: external-secrets
 ---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: secrets
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: controllers
+  interval: 30m
+  path: ./_lib/secrets
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-config
+      - kind: Secret
+        name: cluster-secrets
+
 # Layer 2: Infrastructure (depends on controllers)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -82,6 +103,7 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
+    - name: secrets
   interval: 30m
   path: ./_lib/networking
   prune: true
@@ -109,10 +131,6 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: cluster-config
 ---
 # Layer 4: Applications (depends on infra + security)
 apiVersion: kustomize.toolkit.fluxcd.io/v1

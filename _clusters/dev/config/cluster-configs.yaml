@@ -5,6 +5,8 @@ metadata:
   name: truenas-config
   namespace: flux-system
 data:
+  ENVIRONMENT: "dev"
+  OWNER: "fr3d"
   TRUENAS_HOST: "192.168.20.106"
   TRUENAS_PROTOCOL: "https"
   TRUENAS_PORT: "443"
@@ -14,11 +16,5 @@ data:
   DATASET_SNAPSHOTS: "home-share/iscsi/k8s/dev/snapshots"
   STORAGE_CLASS_NAME: "iscsi"
   ALLOW_INSECURE: "true"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: gateway-config
-  namespace: flux-system
-data:
   GATEWAY_NAME: "dev-app-gateway"
+---

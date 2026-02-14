@@ -1,11 +1,9 @@
----
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: argo
+  name: ot-helm
   namespace: flux-system
 spec:
   interval: 24h
-  url: https://argoproj.github.io/argo-helm
+  url: https://ot-container-kit.github.io/helm-charts/
 
----

@@ -1,0 +1,103 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cert-manager
+  namespace: flux-system
+spec:
+  chart:
+    spec:
+      chart: cert-manager
+      sourceRef:
+        kind: HelmRepository
+        name: jetstack
+      version: v1.19.3
+  interval: 12h
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: -1
+  targetNamespace: cert-manager
+  values:
+    global:
+      fullnameOverride: "dev-cert-manager"
+      nodeSelector:
+        node: "worker"
+      logLevel: 4
+    crds:
+      enabled: true
+      keep: true
+    resources:
+      requests:
+        cpu: 20m
+        memory: 40Mi
+      limits:
+        cpu: 100m
+        memory: 50Mi
+    podLabels:
+      env: "dev"
+      app: "cert-manager"
+      owner: "fr3d"
+    leaderElection:
+      namespace: "cert-manager"
+    image:
+      repository: quay.io/jetstack/cert-manager-controller
+      digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+      pullPolicy: Always
+    serviceAccount:
+      create: true
+      automountServiceAccountToken: true
+    enableCertificateOwnerRef: true
+    dns01RecursiveNameserversOnly: true
+    dns01RecursiveNameservers: "1.1.1.1:53,9.9.9.9:53"
+    prometheus:
+      enabled: true
+      servicemonitor:
+        enabled: true
+    webhook:
+      image:
+        repository: quay.io/jetstack/cert-manager-webhook
+        digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+        pullPolicy: Always
+      replicaCount: 2
+      timeoutSeconds: 30
+      resources:
+        requests:
+          cpu: 20m
+          memory: 20Mi
+        limits:
+          cpu: 50m
+          memory: 50Mi
+    cainjector:
+      enabled: true
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 50m
+          memory: 50Mi
+      image:
+        repository: quay.io/jetstack/cert-manager-cainjector
+        digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+        pullPolicy: Always
+    acmesolver:
+      image:
+        repository: quay.io/jetstack/cert-manager-acmesolver
+        digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+        pullPolicy: Always
+    startupapicheck:
+      enabled: true
+      image:
+        repository: quay.io/jetstack/cert-manager-startupapicheck
+        digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+        pullPolicy: Always
+    podDnsConfig:
+      nameservers:
+        - "1.1.1.1"
+        - "8.8.8.8"
+    podDnsPolicy: None

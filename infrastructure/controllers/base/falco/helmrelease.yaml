@@ -1,0 +1,165 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: falco
+  namespace: flux-system
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: falco
+      version: 4.22.0
+      sourceRef:
+        name: falcosecurity
+        kind: HelmRepository
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  targetNamespace: security
+  values:
+    nameOverride: "falcosecurity"
+    image:
+      pullPolicy: Always
+    driver:
+      kind: modern_ebpf
+    tty: true
+    controller:
+      kind: daemonset
+    driver:
+      loader:
+        initContainer:
+          image:
+            pullPolicy: Always
+    tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+    collectors:
+      engines:
+        containerd:
+          enabled: true
+          socket: /run/containerd/containerd.sock
+        docker:
+          enabled: false
+        cri:
+          enabled: true
+        lxc:
+          enabled: false
+        libvirt_lxc:
+          enabled: false
+      kubernetes:
+        enabled: true
+    falco:
+      json_output: true
+      json_include_output_property: true
+      log_stderr: true
+      log_syslog: false
+      log_level: info
+      priority: notice
+      buffered_outputs: false
+      file_output:
+        enabled: true
+        keep_alive: true
+      grpc:
+        enabled: true
+        bind_address: "unix:///run/falco/falco.sock"
+        threadiness: 0
+      grpc_output:
+        enabled: false
+      http_output:
+        enabled: true
+        url: "http://falco-falcosidekick:2801/"
+        user_agent: "falcosecurity/falco"
+        compress_uploads: true
+        keep_alive: true
+        max_consecutive_timeouts: 10
+      rules_files:
+        - /etc/falco/falco_rules.yaml
+        - /etc/falco/falco-incubating_rules.yaml
+        - /etc/falco/rules.d
+      plugins:
+        - name: json
+          library_path: libjson.so
+          init_config: ""
+      load_plugins: []
+    falcoctl:
+      image:
+        pullPolicy: Always
+      artifact:
+        install:
+          enabled: true
+        follow:
+          enabled: true
+      config:
+        artifact:
+          install:
+            refs:
+              - falco-rules:latest
+              - falco-incubating-rules:latest
+          follow:
+            refs:
+              - falco-rules:latest
+              - falco-incubating-rules:latest
+    metrics:
+      enabled: true
+    serviceMonitor:
+      enabled: true
+      labels: {}
+      interval: 30s
+      scrapeTimeout: 10s
+    grafana:
+      dashboards:
+        enabled: true
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1024Mi
+
+    falcosidekick:
+      enabled: true
+      responseActions:
+        enabled: true
+      replicaCount: 1
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+      webui:
+        enabled: true
+        replicaCount: 1
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        redis:
+          storageEnabled: false
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+---
+

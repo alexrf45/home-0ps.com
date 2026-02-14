@@ -23,7 +23,7 @@ metadata:
   name: crds
   namespace: flux-system
 spec:
-  interval: 6h
+  interval: 15m
   path: ./global/crds
   prune: true
   sourceRef:
@@ -40,7 +40,7 @@ spec:
   dependsOn:
     - name: cluster-config
     - name: crds
-  interval: 6h
+  interval: 15m
   path: ./_lib/controllers
   prune: true
   sourceRef:
@@ -70,7 +70,7 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
-  interval: 6h
+  interval: 15m
   path: ./_lib/storage
   prune: true
   sourceRef:
@@ -95,7 +95,7 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
-  interval: 6h
+  interval: 15m
   path: ./_lib/secrets
   prune: true
   sourceRef:
@@ -130,7 +130,7 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
-  interval: 6h
+  interval: 15m
   path: ./_lib/dns
   prune: true
   sourceRef:
@@ -156,7 +156,7 @@ spec:
   dependsOn:
     - name: controllers
     - name: secrets
-  interval: 6h
+  interval: 15m
   path: ./_lib/networking
   prune: true
   sourceRef:
@@ -181,7 +181,7 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
-  interval: 6h
+  interval: 15m
   path: ./_lib/security
   prune: true
   sourceRef:

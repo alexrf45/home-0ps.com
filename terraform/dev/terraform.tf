@@ -27,6 +27,10 @@ terraform {
       source  = "1Password/onepassword"
       version = "~> 2.1"
     }
+    flux = {
+      source  = "fluxcd/flux"
+      version = "1.7.6"
+    }
 
   }
   backend "s3" {

@@ -42,8 +42,6 @@ spec:
       env: "${ENVIRONMENT}"
       app: "cert-manager"
       owner: "${OWNER}"
-    leaderElection:
-      namespace: "cert-manager"
     image:
       repository: quay.io/jetstack/cert-manager-controller
       digest: sha256:a07125af5e83ecaa3f48317e79c8fae08f0a36654cec45bf0a3404f651b00387

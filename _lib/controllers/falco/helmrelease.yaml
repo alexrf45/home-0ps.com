@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: falco
-      version: 4.22.0
+      version: 8.0.0
       sourceRef:
         name: falcosecurity
         kind: HelmRepository

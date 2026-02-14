@@ -2,7 +2,8 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: democratic-csi
+  name: democratic-csi-freenas
+  namespace: flux-system
 spec:
   interval: 12h
   chart:
@@ -35,7 +36,7 @@ spec:
     storageClasses:
       - name: ${STORAGE_CLASS_NAME}
         defaultClass: true
-        reclaimPolicy: Delete
+        reclaimPolicy: ${RECLAIM_POLICY}
         volumeBindingMode: Immediate
         allowVolumeExpansion: true
         parameters:

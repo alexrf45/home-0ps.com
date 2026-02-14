@@ -1,3 +1,8 @@
+variable "op_vault_id" {
+  description = "UUID of the 1Password vault for infrastructure secrets"
+  type        = string
+}
+
 variable "env" {
   description = "Operating environment of cluster (dev, staging, prod)"
   type        = string
@@ -163,4 +168,19 @@ variable "worker_labels" {
       "node"                           = "worker"
     }
   }
+}
+
+variable "flux_config" {
+  description = "Flux GitOps configuration"
+  type = object({
+    enabled           = bool
+    git_url           = string
+    github_token      = string
+    cluster_path      = string
+    branch            = string
+    cluster_domain    = string
+    sops_secret_name  = string
+    sops_age_key_name = string
+  })
+  sensitive = true
 }

@@ -1,3 +1,8 @@
+variable "op_vault_id" {
+  description = "UUID of the 1Password vault for infrastructure secrets"
+  type        = string
+}
+
 variable "env" {
   description = "Operating environment of cluster (dev, staging, prod)"
   type        = string

@@ -12,7 +12,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: renovate
-        namespace: renovate
+        namespace: flux-system
       interval: 1m
   targetNamespace: renovate
   values:
@@ -29,12 +29,11 @@ spec:
           "flux": {"fileMatch": ["\\.yaml$"]},
           "includePaths": [
             "clusters/**/.+\\.yaml$",
-            "controllers/base/.+\\.yaml$",
-            "applications/base/.+\\.yaml$",
-            "components/**/.+\\.yaml$",
+            "_lib/.+\\.yaml$",
+            "_applications/.+\\.yaml$",
             "**/kustomization.yaml",
-            "**/release.yaml",
-            "**/deploy.yaml"
+            "**/helmrelease.yaml",
+            "**/deployment.yaml"
           ],
            
           "ignorePaths": [

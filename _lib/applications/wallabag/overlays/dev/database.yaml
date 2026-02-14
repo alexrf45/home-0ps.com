@@ -1,0 +1,57 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: wallabag-cluster
+  namespace: wallabag
+  labels:
+    app: "wallabag"
+    node: "worker"
+    env: "${ENVIRONMENT}"
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  postgresql:
+    pg_hba:
+      - hostssl wallabag wallabag 10.43.0.0/16 scram-sha-256
+  instances: 3
+  superuserSecret:
+    name: wallabag-db-creds
+  storage:
+    size: 10Gi
+    storageClass: iscsi
+  walStorage:
+    size: 5Gi
+    storageClass: iscsi
+  bootstrap:
+    recovery:
+      source: wallabag-prod-cluster
+      database: wallabag
+      owner: wallabag
+      secret:
+        name: wallabag-db-creds
+  plugins:
+  - name: barman-cloud.cloudnative-pg.io
+    isWALArchiver: true
+    parameters:
+      barmanObjectName: wallabag-prod-cluster-2026
+  externalClusters:
+  - name: wallabag-prod-cluster
+    plugin:
+      name: barman-cloud.cloudnative-pg.io
+      parameters:
+        barmanObjectName: wallabag-prod-cluster-backup
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: wallabag-prod-backup
+  namespace: wallabag
+spec:
+  schedule: "0 0 * * *"
+  cluster:
+    name: wallabag-prod-cluster
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  immediate: true

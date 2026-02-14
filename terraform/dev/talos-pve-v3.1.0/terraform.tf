@@ -31,5 +31,10 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = "~> 2.36.0"
     }
+    onepassword = {
+      source  = "1Password/onepassword"
+      version = "~> 2.1"
+    }
+
   }
 }

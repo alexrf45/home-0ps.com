@@ -23,6 +23,10 @@ terraform {
       source  = "hashicorp/time"
       version = "~> 0.11.0"
     }
+    onepassword = {
+      source  = "1Password/onepassword"
+      version = "~> 2.1"
+    }
 
   }
   backend "s3" {

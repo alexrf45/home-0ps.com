@@ -17,6 +17,19 @@ spec:
     secretRef:
       name: sops-age
 ---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: crds
+  namespace: flux-system
+spec:
+  interval: 6h
+  path: ./global/crds
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+---
 # Layer 1: Controllers
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -26,7 +39,8 @@ metadata:
 spec:
   dependsOn:
     - name: cluster-config
-  interval: 30m
+    - name: crds
+  interval: 6h
   path: ./_lib/controllers
   prune: true
   sourceRef:
@@ -47,10 +61,31 @@ spec:
       kind: Deployment
       name: cert-manager
       namespace: cert-manager
-    - apiVersion: apps/v1
-      kind: Deployment
-      name: external-secrets
-      namespace: external-secrets
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: storage
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: controllers
+  interval: 6h
+  path: ./_lib/storage
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-config
+      - kind: Secret
+        name: cluster-secrets
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -60,19 +95,32 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
-  interval: 30m
+  interval: 6h
   path: ./_lib/secrets
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   postBuild:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-config
       - kind: Secret
         name: cluster-secrets
-
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: external-secrets
+      namespace: external-secrets
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: onepassword-connect
+      namespace: onepassword
+---
 # Layer 2: Infrastructure (depends on controllers)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -82,12 +130,16 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
-  interval: 30m
+  interval: 6h
   path: ./_lib/dns
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   postBuild:
     substituteFrom:
       - kind: ConfigMap
@@ -104,12 +156,16 @@ spec:
   dependsOn:
     - name: controllers
     - name: secrets
-  interval: 30m
+  interval: 6h
   path: ./_lib/networking
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   postBuild:
     substituteFrom:
       - kind: ConfigMap
@@ -125,26 +181,8 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
-  interval: 30m
+  interval: 6h
   path: ./_lib/security
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
----
-# Layer 4: Applications (depends on infra + security)
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: apps
-  namespace: flux-system
-spec:
-  dependsOn:
-    - name: dns
-    - name: networking
-    - name: security
-  interval: 15m
-  path: ./_lib/apps/wallabag/overlays/prod  # or use a top-level kustomization
   prune: true
   sourceRef:
     kind: GitRepository
@@ -159,3 +197,34 @@ spec:
         name: cluster-config
       - kind: Secret
         name: cluster-secrets
+
+---
+# # Layer 4: Applications (depends on infra + security)
+# apiVersion: kustomize.toolkit.fluxcd.io/v1
+# kind: Kustomization
+# metadata:
+#   name: apps
+#   namespace: flux-system
+# spec:
+#   dependsOn:
+#     - name: dns
+#     - name: storage
+#     - name: networking
+#     - name: secrets
+#     - name: security
+#   interval: 15m
+#   path: ./_lib/applications/wallabag/overlays/dev  # or use a top-level kustomization
+#   prune: true
+#   sourceRef:
+#     kind: GitRepository
+#     name: flux-system
+#   decryption:
+#     provider: sops
+#     secretRef:
+#       name: sops-age
+#   postBuild:
+#     substituteFrom:
+#       - kind: ConfigMap
+#         name: cluster-config
+#       - kind: Secret
+#         name: cluster-secrets

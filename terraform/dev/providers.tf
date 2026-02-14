@@ -15,6 +15,10 @@ provider "proxmox" {
   }
 }
 
+provider "onepassword" {
+  account = "Fontaine_Shield"
+}
+
 provider "kubernetes" {
   host                   = module.cluster.kubernetes_host
   client_certificate     = module.cluster.kubernetes_client_certificate
@@ -30,12 +34,16 @@ provider "flux" {
     cluster_ca_certificate = module.cluster.kubernetes_cluster_ca_certificate
   }
   git = {
-    url = var.flux_config.git_url
-    ssh = {
-      username    = "git"
-      private_key = file(pathexpand(var.flux_config.ssh_private_key_path))
+    url    = var.flux_config.git_url
+    branch = var.flux_config.branch
+    http = {
+      username = "git"
+      password = data.onepassword_item.github_token.credential
     }
   }
 }
 
-
+data "onepassword_item" "github_token" {
+  vault = var.op_vault_id
+  title = "flux_bootstrap_test"
+}

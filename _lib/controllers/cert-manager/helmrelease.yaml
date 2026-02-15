@@ -72,11 +72,11 @@ spec:
       enabled: true
       resources:
         requests:
-          cpu: 10m
-          memory: 32Mi
-        limits:
-          cpu: 50m
+          cpu: 100m
           memory: 50Mi
+        limits:
+          cpu: 200m
+          memory: 75Mi
       image:
         repository: quay.io/jetstack/cert-manager-cainjector
         digest: sha256:eb1df56668b6e61bd902febe816568e7e47f47276121bc0e1222890871c61e50

@@ -193,6 +193,7 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
+    - name: trust-manager
   interval: 15m
   path: ./_lib/secrets
   prune: true

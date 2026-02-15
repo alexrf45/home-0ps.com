@@ -39,6 +39,10 @@ spec:
         - cert-manager
         - external-secrets
         - monitoring
+        - onepassword
+        - renovate
+        - mariadb
+        - redis
     admissionController:
       container:
         image:

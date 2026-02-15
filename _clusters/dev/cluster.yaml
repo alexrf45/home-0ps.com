@@ -40,9 +40,8 @@ spec:
   dependsOn:
     - name: cluster-config
     - name: crds
-  interval: 5m
-  wait: true
-  timeout: 5m0s
+  interval: 15m
+  timeout: 10m0s
   path: ./_lib/controllers
   prune: true
   sourceRef:
@@ -61,7 +60,7 @@ spec:
   healthChecks:
     - apiVersion: apps/v1
       kind: Deployment
-      name: cert-manager
+      name: memphis-cert-manager
       namespace: cert-manager
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1

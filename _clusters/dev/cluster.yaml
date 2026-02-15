@@ -62,6 +62,16 @@ metadata:
   name: trust-manager
   namespace: flux-system
 spec:
+  interval: 15m
+  timeout: 10m0s
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   dependsOn:
     - name: cert-manager
   path: ./_lib/controllers/trust-manager
@@ -72,6 +82,16 @@ metadata:
   name: trust-bundle
   namespace: flux-system
 spec:
+  interval: 15m
+  timeout: 10m0s
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   dependsOn:
     - name: trust-manager
     - name: networking  # where your ClusterIssuer lives
@@ -83,6 +103,16 @@ metadata:
   name: external-secrets
   namespace: flux-system
 spec:
+  interval: 15m
+  timeout: 10m0s
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   dependsOn:
     - name: trust-bundle
   path: ./_lib/secrets/external-secrets
@@ -93,6 +123,16 @@ metadata:
   name: onepassword
   namespace: flux-system
 spec:
+  interval: 15m
+  timeout: 10m0s
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   dependsOn:
     - name: external-secrets
     - name: trust-bundle

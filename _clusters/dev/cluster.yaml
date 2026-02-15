@@ -40,7 +40,7 @@ spec:
   dependsOn:
     - name: cluster-config
     - name: crds
-  interval: 15m
+  interval: 5m
   wait: true
   timeout: 5m0s
   path: ./_lib/controllers

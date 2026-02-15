@@ -132,7 +132,7 @@ spec:
         - resources:
             namespaces:
             - kube-system
-            - kyverno
+            - security
             - flux-system
             - storage
             - cert-manager
@@ -175,7 +175,7 @@ spec:
         - resources:
             namespaces:
             - flux-system
-            - kyverno
+           - security
       validate:
         message: "imagePullPolicy must be Always"
         pattern:
@@ -208,7 +208,7 @@ spec:
         - resources:
             namespaces:
             - storage
-            - kyverno
+            - security
 
       validate:
         message: "Using a mutable image tag e.g. 'latest' is not allowed"
@@ -245,7 +245,7 @@ spec:
         - resources:
             namespaces:
             - kube-system
-            - kyverno
+            - security
             - flux-system
             - networking
             - database
@@ -307,7 +307,7 @@ spec:
         - resources:
             namespaces:
             - kube-system
-            - kyverno
+            - security
             - flux-system
             - storage
       mutate:
@@ -350,7 +350,7 @@ spec:
         - resources:
             namespaces:
             - kube-system
-            - kyverno
+            - security
             - flux-system
       validate:
         message: "Only approved ingress classes are allowed"
@@ -379,7 +379,7 @@ spec:
         - resources:
             namespaces:
             - kube-system
-            - kyverno
+            - security
             - flux-system
             - networking
             - database

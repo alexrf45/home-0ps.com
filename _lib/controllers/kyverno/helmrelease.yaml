@@ -23,7 +23,7 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
-  targetNamespace: security
+  targetNamespace: kyverno
   values:
     config:
       excludeKyvernoNamespace: true

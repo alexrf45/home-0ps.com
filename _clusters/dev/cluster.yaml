@@ -76,7 +76,6 @@ spec:
     - name: trust-manager
     - name: networking  # where your ClusterIssuer lives
   path: ./_lib/secrets/trust-bundle
-
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -98,7 +97,7 @@ spec:
     - name: external-secrets
     - name: trust-bundle
   path: ./_lib/secrets/onepassword
-  # ...
+---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:

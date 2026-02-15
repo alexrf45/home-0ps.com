@@ -135,6 +135,7 @@ spec:
             - kyverno
             - flux-system
             - storage
+            - cert-manager
       validate:
         message: "Resource requests and limits are required"
         pattern:

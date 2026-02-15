@@ -25,17 +25,6 @@ spec:
     keepHistory: false
   targetNamespace: security
   values:
-    config:
-      webhooks:
-        - namespaceSelector:
-            matchExpressions:
-              - key: kubernetes.io/metadata.name
-                operator: NotIn
-                values:
-                  - kube-system
-                  - security
-                  - cert-manager
-
     admissionController:
       container:
         image:

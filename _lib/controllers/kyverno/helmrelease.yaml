@@ -89,7 +89,10 @@ spec:
     reportsController:
       container:
         image:
+          defaultRegistry: reg.kyverno.io
+          repository: kyverno/reports-controller
           pullPolicy: Always
+
         resources:
           requests:
             cpu: 50m

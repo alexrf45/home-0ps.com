@@ -1,0 +1,38 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: trust-manager
+  namespace: flux-system
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: trust-manager
+      sourceRef:
+        kind: HelmRepository
+        name: trust-manager
+      version: "0.16.0"
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  targetNamespace: cert-manager
+  values:
+    crds:
+      enabled: true
+      keep: true
+    nodeSelector:
+      node: "worker"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 50m
+        memory: 64Mi
+    imagePullPolicy: Always

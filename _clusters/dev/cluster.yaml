@@ -59,6 +59,49 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: trust-manager
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: cert-manager
+  path: ./_lib/controllers/trust-manager
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: trust-bundle
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: trust-manager
+    - name: networking  # where your ClusterIssuer lives
+  path: ./_lib/secrets/trust-bundle
+
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: external-secrets
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: trust-bundle
+  path: ./_lib/secrets/external-secrets
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: onepassword
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: external-secrets
+    - name: trust-bundle
+  path: ./_lib/secrets/onepassword
+  # ...
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: database
   namespace: flux-system
 spec:

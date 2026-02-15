@@ -35,4 +35,7 @@ spec:
       limits:
         cpu: 50m
         memory: 64Mi
-    imagePullPolicy: Always
+    image:
+      pullPolicy: Always
+    defaultPackageImage:
+      pullPolicy: Always

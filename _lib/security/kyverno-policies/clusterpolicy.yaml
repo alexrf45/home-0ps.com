@@ -168,6 +168,11 @@ spec:
         - resources:
             kinds:
             - Pod
+      exclude:
+        any:
+        - resources:
+            namespaces:
+            - flux-system
       validate:
         message: "imagePullPolicy must be Always"
         pattern:

@@ -39,7 +39,6 @@ spec:
         memory: 50Mi
     podLabels:
       env: "${ENVIRONMENT}"
-      app: "cert-manager"
       owner: "${OWNER}"
     image:
       repository: quay.io/jetstack/cert-manager-controller

@@ -176,6 +176,7 @@ spec:
             namespaces:
             - flux-system
             - security
+            - storage
       validate:
         message: "imagePullPolicy must be Always"
         pattern:

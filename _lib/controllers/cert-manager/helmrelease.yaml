@@ -24,7 +24,6 @@ spec:
   targetNamespace: cert-manager
   values:
     global:
-      fullnameOverride: "cert-manager"
       nodeSelector:
         node: "worker"
       logLevel: 4

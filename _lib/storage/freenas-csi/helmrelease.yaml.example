@@ -23,11 +23,6 @@ spec:
     remediation:
       retries: 3
   targetNamespace: storage
-  valuesFrom:
-    - kind: Secret
-      name: truenas-api-creds
-      valuesKey: credential
-      targetPath: driver.config.httpConnection.apiKey
   values:
     controller:
       driver:
@@ -56,8 +51,16 @@ spec:
           protocol: ${TRUENAS_PROTOCOL}
           host: ${TRUENAS_HOST}
           port: ${TRUENAS_PORT}
+          #username: ${TRUENAS_USERNAME}
+          #password: ${TRUENAS_PASSWORD}
+          apiKey: ${TRUENAS_API_KEY}
           allowInsecure: ${ALLOW_INSECURE}
           apiVersion: 2
+        # sshConnection:
+        #   host: ${TRUENAS_HOST}
+        #   port: 22
+        #   username: ${TRUENAS_USERNAME}
+        #   password: ${TRUENAS_PASSWORD}
         zfs:
           datasetParentName: ${DATASET_PARENT}
           detachedSnapshotsDatasetParentName: ${DATASET_SNAPSHOTS}
@@ -95,3 +98,4 @@ spec:
             value: /usr/local/sbin/iscsiadm
         iscsiDirHostPath: /var/etc/iscsi
         iscsiDirHostPathType: DirectoryOrCreate
+

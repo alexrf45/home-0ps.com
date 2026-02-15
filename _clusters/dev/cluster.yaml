@@ -55,13 +55,6 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-config
-      - kind: Secret
-        name: cluster-secrets
-#   healthChecks:
-#     - apiVersion: apps/v1
-#       kind: Deployment
-#       name: cert-manager
-#       namespace: cert-manager
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -85,10 +78,6 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-config
-      - kind: Secret
-        name: cluster-secrets
-
-
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -98,6 +87,7 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
+    - name: secrets
   interval: 15m
   path: ./_lib/storage
   prune: true
@@ -112,8 +102,6 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-config
-      - kind: Secret
-        name: cluster-secrets
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -137,8 +125,6 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-config
-      - kind: Secret
-        name: cluster-secrets
   healthChecks:
     - apiVersion: apps/v1
       kind: Deployment
@@ -168,8 +154,6 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-config
-      - kind: Secret
-        name: cluster-secrets
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -194,8 +178,6 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-config
-      - kind: Secret
-        name: cluster-secrets
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -219,9 +201,6 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-config
-      - kind: Secret
-        name: cluster-secrets
-
 ---
 # # Layer 4: Applications (depends on infra + security)
 # apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -250,5 +229,3 @@ spec:
 #     substituteFrom:
 #       - kind: ConfigMap
 #         name: cluster-config
-#       - kind: Secret
-#         name: cluster-secrets

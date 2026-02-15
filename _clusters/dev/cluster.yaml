@@ -205,7 +205,7 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
-  interval: 15m
+  interval: 5m
   path: ./_lib/security
   prune: true
   sourceRef:

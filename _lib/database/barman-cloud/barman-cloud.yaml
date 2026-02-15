@@ -307,6 +307,7 @@ spec:
               key: SIDECAR_IMAGE
               name: plugin-barman-cloud-t5844mh4gf
         image: ghcr.io/cloudnative-pg/plugin-barman-cloud:v0.10.0
+        imagePullPolicy: Always
         name: barman-cloud
         ports:
         - containerPort: 9090
@@ -316,7 +317,13 @@ spec:
           periodSeconds: 10
           tcpSocket:
             port: 9090
-        resources: {}
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

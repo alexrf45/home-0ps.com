@@ -136,6 +136,7 @@ spec:
             - flux-system
             - storage
             - cert-manager
+            - networking
       validate:
         message: "Resource requests and limits are required"
         pattern:

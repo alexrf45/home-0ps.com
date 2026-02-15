@@ -25,6 +25,20 @@ spec:
     keepHistory: false
   targetNamespace: security
   values:
+    config:
+      excludeKyvernoNamespace: true
+      resourceFiltersExcludeNamespaces:
+        - kube-system
+        - kube-public
+        - kube-node-lease
+        - flux-system
+        - security
+        - storage
+        - networking
+        - database
+        - cert-manager
+        - external-secrets
+        - monitoring
     admissionController:
       container:
         image:
@@ -46,7 +60,6 @@ spec:
           limits:
             cpu: 200m
             memory: 256Mi
-
     backgroundController:
       container:
         image:
@@ -58,7 +71,6 @@ spec:
           limits:
             cpu: 250m
             memory: 256Mi
-
     cleanupController:
       container:
         image:
@@ -70,7 +82,6 @@ spec:
           limits:
             cpu: 250m
             memory: 256Mi
-
     reportsController:
       container:
         image:
@@ -81,4 +92,4 @@ spec:
             memory: 64Mi
           limits:
             cpu: 250m
-            memory: 256M
+            memory: 256Mi

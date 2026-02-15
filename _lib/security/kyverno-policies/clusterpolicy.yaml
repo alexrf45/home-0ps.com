@@ -175,6 +175,7 @@ spec:
         - resources:
             namespaces:
             - flux-system
+            - kyverno
       validate:
         message: "imagePullPolicy must be Always"
         pattern:
@@ -207,6 +208,7 @@ spec:
         - resources:
             namespaces:
             - storage
+            - kyverno
 
       validate:
         message: "Using a mutable image tag e.g. 'latest' is not allowed"

@@ -73,7 +73,7 @@ spec:
     secretRef:
       name: sops-age
   dependsOn:
-    - name: cert-manager
+    - name: controllers
   path: ./_lib/controllers/trust-manager
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1

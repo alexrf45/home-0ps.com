@@ -15,12 +15,12 @@ spec:
       version: "0.16.0"
   install:
     remediation:
-      retries: 3
+      retries: -1
   upgrade:
     cleanupOnFail: true
     remediation:
       strategy: rollback
-      retries: 3
+      retries: -1
   targetNamespace: cert-manager
   values:
     crds:
@@ -30,11 +30,11 @@ spec:
       node: "worker"
     resources:
       requests:
-        cpu: 10m
-        memory: 32Mi
+        cpu: 100m
+        memory: 50Mi
       limits:
-        cpu: 50m
-        memory: 64Mi
+        cpu: 200m
+        memory: 100Mi
     image:
       pullPolicy: Always
     defaultPackageImage:

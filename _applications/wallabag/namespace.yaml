@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wallabag
+  labels:
+    home-0ps.com/policy-target: "application"

@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - ./freenas-csi
   - ./local-path
+  - ./barman-cloud

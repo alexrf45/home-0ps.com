@@ -1,4 +1,3 @@
-# clusters/horus/cluster.yaml
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -31,7 +30,7 @@ spec:
     kind: GitRepository
     name: flux-system
 ---
-# Layer 1: Controllers
+# Layer 1: Controllers (all operators)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -58,103 +57,19 @@ spec:
       - kind: ConfigMap
         name: cluster-config
 ---
+# Layer 2: PKI (CA chain, internal issuer, trust distribution)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: trust-manager
-  namespace: flux-system
-spec:
-  interval: 10m
-  retryInterval: 1m
-  timeout: 10m0s
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  dependsOn:
-    - name: controllers
-  path: ./_lib/controllers/trust-manager
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: trust-bundle
-  namespace: flux-system
-spec:
-  interval: 10m
-  retryInterval: 1m
-  timeout: 10m0s
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  dependsOn:
-    - name: trust-manager
-    - name: networking  # where your ClusterIssuer lives
-  path: ./_lib/secrets/trust-bundle
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: external-secrets
-  namespace: flux-system
-spec:
-  interval: 10m
-  retryInterval: 1m
-  timeout: 10m0s
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  dependsOn:
-    - name: trust-bundle
-  path: ./_lib/secrets/external-secrets
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: onepassword
-  namespace: flux-system
-spec:
-  interval: 10m
-  retryInterval: 1m
-  timeout: 10m0s
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  dependsOn:
-    - name: external-secrets
-    - name: trust-bundle
-  path: ./_lib/secrets/onepassword
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: database
+  name: pki
   namespace: flux-system
 spec:
   dependsOn:
     - name: controllers
   interval: 10m
   retryInterval: 1m
-  path: ./_lib/database
+  timeout: 10m0s
+  path: ./_lib/pki
   prune: true
   sourceRef:
     kind: GitRepository
@@ -163,36 +78,8 @@ spec:
     provider: sops
     secretRef:
       name: sops-age
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: cluster-config
 ---
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: storage
-  namespace: flux-system
-spec:
-  dependsOn:
-    - name: controllers
-    - name: secrets
-  interval: 10m
-  retryInterval: 1m
-  path: ./_lib/storage
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: cluster-config
----
+# Layer 3: Secrets (ESO + 1Password + ClusterSecretStore)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -201,9 +88,10 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
-    - name: trust-manager
+    - name: pki
   interval: 10m
   retryInterval: 1m
+  timeout: 10m0s
   path: ./_lib/secrets
   prune: true
   sourceRef:
@@ -218,31 +106,7 @@ spec:
       - kind: ConfigMap
         name: cluster-config
 ---
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: dns
-  namespace: flux-system
-spec:
-  dependsOn:
-    - name: controllers
-    - name: secrets
-  interval: 10m
-  retryInterval: 1m
-  path: ./_lib/dns
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: cluster-config
----
+# Layer 4: Networking (gateway, tailscale, letsencrypt issuers)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -250,10 +114,10 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: controllers
     - name: secrets
   interval: 10m
   retryInterval: 1m
+  timeout: 10m0s
   path: ./_lib/networking
   prune: true
   sourceRef:
@@ -268,17 +132,19 @@ spec:
       - kind: ConfigMap
         name: cluster-config
 ---
+# Layer 5a: DNS
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: security
+  name: dns
   namespace: flux-system
 spec:
   dependsOn:
-    - name: controllers
+    - name: secrets
   interval: 10m
   retryInterval: 1m
-  path: ./_lib/security
+  timeout: 10m0s
+  path: ./_lib/dns
   prune: true
   sourceRef:
     kind: GitRepository
@@ -292,11 +158,63 @@ spec:
       - kind: ConfigMap
         name: cluster-config
 ---
-# # Layer 4: Applications (depends on infra + security)
+# Layer 5b: Storage
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: storage
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: secrets
+  interval: 10m
+  retryInterval: 1m
+  timeout: 10m0s
+  path: ./_lib/storage
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-config
+---
+# Layer 6: Security policies (parallel to infrastructure)
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: security
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: controllers
+  interval: 10m
+  retryInterval: 1m
+  timeout: 10m0s
+  path: ./_lib/security
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-config
+#---
+# # Layer 7: Applications
 # apiVersion: kustomize.toolkit.fluxcd.io/v1
 # kind: Kustomization
 # metadata:
-#   name: apps
+#   name: applications
 #   namespace: flux-system
 # spec:
 #   dependsOn:
@@ -305,8 +223,10 @@ spec:
 #     - name: networking
 #     - name: secrets
 #     - name: security
-#   interval: 15m
-#   path: ./_lib/applications/wallabag/overlays/dev  # or use a top-level kustomization
+#   interval: 10m
+#   retryInterval: 1m
+#   timeout: 10m0s
+#   path: ./_lib/applications
 #   prune: true
 #   sourceRef:
 #     kind: GitRepository

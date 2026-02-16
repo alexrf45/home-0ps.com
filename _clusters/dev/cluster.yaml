@@ -7,6 +7,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./_clusters/dev/config
   prune: false
   sourceRef:
@@ -40,7 +41,8 @@ spec:
   dependsOn:
     - name: cluster-config
     - name: crds
-  interval: 15m
+  interval: 10m
+  retryInterval: 1m
   timeout: 10m0s
   path: ./_lib/controllers
   prune: true
@@ -62,7 +64,8 @@ metadata:
   name: trust-manager
   namespace: flux-system
 spec:
-  interval: 15m
+  interval: 10m
+  retryInterval: 1m
   timeout: 10m0s
   prune: true
   sourceRef:
@@ -82,7 +85,8 @@ metadata:
   name: trust-bundle
   namespace: flux-system
 spec:
-  interval: 15m
+  interval: 10m
+  retryInterval: 1m
   timeout: 10m0s
   prune: true
   sourceRef:
@@ -103,7 +107,8 @@ metadata:
   name: external-secrets
   namespace: flux-system
 spec:
-  interval: 15m
+  interval: 10m
+  retryInterval: 1m
   timeout: 10m0s
   prune: true
   sourceRef:
@@ -123,7 +128,8 @@ metadata:
   name: onepassword
   namespace: flux-system
 spec:
-  interval: 15m
+  interval: 10m
+  retryInterval: 1m
   timeout: 10m0s
   prune: true
   sourceRef:
@@ -146,7 +152,8 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
-  interval: 15m
+  interval: 10m
+  retryInterval: 1m
   path: ./_lib/database
   prune: true
   sourceRef:
@@ -170,7 +177,8 @@ spec:
   dependsOn:
     - name: controllers
     - name: secrets
-  interval: 15m
+  interval: 10m
+  retryInterval: 1m
   path: ./_lib/storage
   prune: true
   sourceRef:
@@ -194,7 +202,8 @@ spec:
   dependsOn:
     - name: controllers
     - name: trust-manager
-  interval: 15m
+  interval: 10m
+  retryInterval: 1m
   path: ./_lib/secrets
   prune: true
   sourceRef:
@@ -218,7 +227,8 @@ spec:
   dependsOn:
     - name: controllers
     - name: secrets
-  interval: 15m
+  interval: 10m
+  retryInterval: 1m
   path: ./_lib/dns
   prune: true
   sourceRef:
@@ -242,7 +252,8 @@ spec:
   dependsOn:
     - name: controllers
     - name: secrets
-  interval: 15m
+  interval: 10m
+  retryInterval: 1m
   path: ./_lib/networking
   prune: true
   sourceRef:
@@ -265,7 +276,8 @@ metadata:
 spec:
   dependsOn:
     - name: controllers
-  interval: 5m
+  interval: 10m
+  retryInterval: 1m
   path: ./_lib/security
   prune: true
   sourceRef:

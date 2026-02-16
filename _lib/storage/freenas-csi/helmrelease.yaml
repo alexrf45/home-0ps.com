@@ -26,7 +26,7 @@ spec:
   valuesFrom:
     - kind: Secret
       name: truenas-api-creds
-      valuesKey: credential
+      valuesKey: TRUENAS_API_KEY
       targetPath: driver.config.httpConnection.apiKey
   values:
     controller:

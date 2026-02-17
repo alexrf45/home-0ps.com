@@ -37,13 +37,15 @@ spec:
       enabled: false
     replicaCount: 1
     revisionHistoryLimit: 15
+    extraEnv:
+      - name: SSL_CERT_DIR
+        value: /etc/ssl/certs
+    extraVolumeMounts:
+      - name: internal-ca
+        mountPath: /etc/ssl/certs/ca-certificates.crt   # Override the bundle itself
+        subPath: ca-certificates.crt
+        readOnly: true
     extraVolumes:
       - name: internal-ca
         configMap:
           name: homelab-internal-ca-bundle
-    extraVolumeMounts:
-      - name: internal-ca
-        mountPath: /etc/ssl/certs/homelab-internal-ca.crt
-        subPath: ca-certificates.crt
-        readOnly: true
-

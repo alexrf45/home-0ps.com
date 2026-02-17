@@ -46,6 +46,7 @@ spec:
   timeout: 10m0s
   path: ./_lib/controllers
   prune: true
+  wait: true
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -140,10 +141,6 @@ spec:
       kind: Deployment
       name: onepassword-connect
       namespace: onepassword
-    - apiVersion: external-secrets.io/v1
-      kind: ClusterSecretStore
-      name: onepassword-connect
-      namespace: external-secrets
 ---
 # Layer 4: Networking (gateway, tailscale, letsencrypt issuers)
 apiVersion: kustomize.toolkit.fluxcd.io/v1

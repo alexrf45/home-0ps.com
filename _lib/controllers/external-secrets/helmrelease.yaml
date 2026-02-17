@@ -23,7 +23,7 @@ spec:
       nodeSelector:
         node: "worker"
     log:
-      level: info
+      level: debug
       timeEncoding: epoch
     installCRDs: true
     crds:

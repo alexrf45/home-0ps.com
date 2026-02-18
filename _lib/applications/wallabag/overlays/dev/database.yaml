@@ -13,15 +13,20 @@ spec:
   postgresql:
     pg_hba:
       - hostssl wallabag wallabag 10.43.0.0/16 scram-sha-256
+    parameters:
+      "pgaudit.log": "all, -misc"
+      "pgaudit.log_catalog": "off"
+      "pgaudit.log_parameter": "on"
+      "pgaudit.log_relation": "on"
   instances: 3
   superuserSecret:
     name: wallabag-db-creds
   storage:
     size: 20Gi
-    storageClass: iscsi
+    storageClass: local-path
   walStorage:
     size: 5Gi
-    storageClass: iscsi
+    storageClass: local-path
   bootstrap:
     recovery:
       source: wallabag-prod-cluster

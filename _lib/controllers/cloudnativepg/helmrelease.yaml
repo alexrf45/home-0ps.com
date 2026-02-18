@@ -28,9 +28,12 @@ metadata:
   namespace: flux-system
 spec:
   upgrade:
-    crds: CreateReplace
+    cleanupOnFail: true
+    remediation:
+      retries: -1
   install:
-    crds: CreateReplace
+    remediation:
+      retries: -1
   interval: 30m
   chart:
     spec:
@@ -40,12 +43,12 @@ spec:
         kind: HelmRepository
         name: cnpg
         namespace: flux-system
-      interval: 12h
+      interval: 30m
   targetNamespace: database
   values:
     replicaCount: 1
     crds:
-      create: true
+      create: false
     monitoring:
       podMonitorEnabled: false
       grafanaDashboard:

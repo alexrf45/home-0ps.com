@@ -1,23 +1,23 @@
-resource "local_sensitive_file" "kubeconfig" {
-  count = var.config_export.enabled ? 1 : 0
+resource "onepassword_item" "kubeconfig" {
+  count      = var.config_export.enabled ? 1 : 0
+  vault      = var.op_vault_id
+  title      = "${var.talos.name}-kubeconfig"
+  category   = "secure_note"
+  note_value = talos_cluster_kubeconfig.this.kubeconfig_raw
 
   depends_on = [
     talos_cluster_kubeconfig.this
   ]
-
-  content         = talos_cluster_kubeconfig.this.kubeconfig_raw
-  filename        = pathexpand(var.config_export.kubeconfig_path)
-  file_permission = "0600"
 }
 
-resource "local_sensitive_file" "talosconfig" {
-  count = var.config_export.enabled ? 1 : 0
+resource "onepassword_item" "talosconfig" {
+  count      = var.config_export.enabled ? 1 : 0
+  vault      = var.op_vault_id
+  title      = "${var.talos.name}-talosconfig"
+  category   = "secure_note"
+  note_value = data.talos_client_configuration.this.talos_config
 
   depends_on = [
     talos_cluster_kubeconfig.this
   ]
-
-  content         = data.talos_client_configuration.this.talos_config
-  filename        = pathexpand(var.config_export.talosconfig_path)
-  file_permission = "0600"
 }

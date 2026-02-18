@@ -42,17 +42,6 @@ output "worker_node_names" {
   description = "Map of worker node keys to their assigned hostnames"
 }
 
-# Config export paths
-output "kubeconfig_path" {
-  value       = var.config_export.enabled ? pathexpand(var.config_export.kubeconfig_path) : null
-  description = "Path where kubeconfig was written (null if export disabled)"
-}
-
-output "talosconfig_path" {
-  value       = var.config_export.enabled ? pathexpand(var.config_export.talosconfig_path) : null
-  description = "Path where talosconfig was written (null if export disabled)"
-}
-
 output "post_deployment_instructions" {
   value       = <<-EOT
  
@@ -60,12 +49,10 @@ output "post_deployment_instructions" {
     Cluster "${var.talos.name}" Deployment Complete! (v3.1.0)
     ============================================================
  
-    ${var.config_export.enabled ? "✓ kubeconfig exported to: ${pathexpand(var.config_export.kubeconfig_path)}" : "⚠ kubeconfig export disabled - use: terraform output -raw kubeconfig > ~/.kube/${var.env}"}
-    ${var.config_export.enabled ? "✓ talosconfig exported to: ${pathexpand(var.config_export.talosconfig_path)}" : "⚠ talosconfig export disabled - use: terraform output -raw talos_config > ~/.talos/${var.env}"}
     ${var.worker_labels.enabled ? "✓ Worker node labels applied" : "⚠ Worker labeling disabled"}
  
     Verify cluster:
-       kubectl --kubeconfig ${pathexpand(var.config_export.kubeconfig_path)} get nodes
+       kubectl --kubeconfig KUBECONFIG get nodes
  
     Merge kubeconfig (optional):
        cp ~/.kube/config ~/.kube/config_bk && \

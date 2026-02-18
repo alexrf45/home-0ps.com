@@ -1,0 +1,27 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wallabag-ts
+  namespace: wallabag
+  labels:
+    app.kubernetes.io/name: wallabag
+  annotations:
+    tailscale.com/funnel: "true"
+spec:
+  ingressClassName: tailscale
+  rules:
+  - host: ${ENVIRONMENT}-wallabag
+    http:
+      paths:
+      - backend:
+          service:
+            name: wallabag
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - ${ENVIRONMENT}-wallabag
+    secretName: ${ENVIRONMENT}-wallabag-tls

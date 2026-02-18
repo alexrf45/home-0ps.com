@@ -2,7 +2,8 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: democratic-csi
+  name: democratic-csi-freenas
+  namespace: flux-system
 spec:
   interval: 12h
   chart:
@@ -22,6 +23,11 @@ spec:
     remediation:
       retries: 3
   targetNamespace: storage
+  valuesFrom:
+    - kind: Secret
+      name: truenas-api-creds
+      valuesKey: TRUENAS_API_KEY
+      targetPath: driver.config.httpConnection.apiKey
   values:
     controller:
       driver:
@@ -35,7 +41,7 @@ spec:
     storageClasses:
       - name: ${STORAGE_CLASS_NAME}
         defaultClass: true
-        reclaimPolicy: Delete
+        reclaimPolicy: ${RECLAIM_POLICY}
         volumeBindingMode: Immediate
         allowVolumeExpansion: true
         parameters:
@@ -50,16 +56,8 @@ spec:
           protocol: ${TRUENAS_PROTOCOL}
           host: ${TRUENAS_HOST}
           port: ${TRUENAS_PORT}
-          #username: ${TRUENAS_USERNAME}
-          #password: ${TRUENAS_PASSWORD}
-          apiKey: ${TRUENAS_API_KEY}
           allowInsecure: ${ALLOW_INSECURE}
           apiVersion: 2
-        # sshConnection:
-        #   host: ${TRUENAS_HOST}
-        #   port: 22
-        #   username: ${TRUENAS_USERNAME}
-        #   password: ${TRUENAS_PASSWORD}
         zfs:
           datasetParentName: ${DATASET_PARENT}
           detachedSnapshotsDatasetParentName: ${DATASET_SNAPSHOTS}
@@ -97,4 +95,3 @@ spec:
             value: /usr/local/sbin/iscsiadm
         iscsiDirHostPath: /var/etc/iscsi
         iscsiDirHostPathType: DirectoryOrCreate
-

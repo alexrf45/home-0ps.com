@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: kyverno
-      version: 3.5.0
+      version: 3.7.0
       sourceRef:
         name: kyverno
         kind: HelmRepository
@@ -23,5 +23,77 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
-  targetNamespace: security
+  targetNamespace: kyverno
   values:
+    config:
+      excludeKyvernoNamespace: true
+      resourceFiltersExcludeNamespaces:
+        - kube-system
+        - kube-public
+        - kube-node-lease
+        - flux-system
+        - security
+        - storage
+        - networking
+        - database
+        - cert-manager
+        - external-secrets
+        - monitoring
+        - onepassword
+        - renovate
+        - mariadb
+        - redis
+    admissionController:
+      container:
+        image:
+          pullPolicy: Always
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+      initContainer:
+        image:
+          pullPolicy: Always
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+    backgroundController:
+      container:
+        image:
+          pullPolicy: Always
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+    cleanupController:
+      container:
+        image:
+          pullPolicy: Always
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+    reportsController:
+      container:
+        image:
+          pullPolicy: Always
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi

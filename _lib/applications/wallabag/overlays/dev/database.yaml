@@ -38,23 +38,23 @@ spec:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true
     parameters:
-      barmanObjectName: "wallabag-${ENVIRONMENT}-cluster-2026"
+      barmanObjectName: wallabag-dev-cluster-2026
   externalClusters:
   - name: wallabag-prod-cluster
     plugin:
       name: barman-cloud.cloudnative-pg.io
       parameters:
-        barmanObjectName: "wallabag-${ENVIRONMENT}-cluster-backup"
+        barmanObjectName: wallabag-dev-cluster-backup
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: wallabag-prod-backup
+  name: wallabag-dev-backup
   namespace: wallabag
 spec:
   schedule: "0 0 * * *"
   cluster:
-    name: wallabag-${ENVIRONMENT}-cluster
+    name: wallabag-dev-cluster
   backupOwnerReference: self
   method: plugin
   pluginConfiguration:

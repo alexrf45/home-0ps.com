@@ -5,8 +5,8 @@ metadata:
   namespace: wallabag
 spec:
   parentRefs:
-    - name: ${GATEWAY}
-      namespace: wallabag
+    - name: ${GATEWAY_NAME}
+      namespace: networking
   hostnames:
     - "${WALLABAG_SUBDOMAIN}.home-0ps.com"
   rules:

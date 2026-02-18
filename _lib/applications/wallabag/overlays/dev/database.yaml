@@ -17,7 +17,7 @@ spec:
   superuserSecret:
     name: wallabag-db-creds
   storage:
-    size: 10Gi
+    size: 20Gi
     storageClass: iscsi
   walStorage:
     size: 5Gi

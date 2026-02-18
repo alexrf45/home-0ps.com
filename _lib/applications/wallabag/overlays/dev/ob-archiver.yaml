@@ -1,7 +1,7 @@
 apiVersion: barmancloud.cnpg.io/v1
 kind: ObjectStore
 metadata:
-    name: wallabag-cluster-2026
+    name: wallabag-{ENVIRONMENT}-cluster-2026
     namespace: wallabag
 spec:
     retentionPolicy: 7d

@@ -33,9 +33,9 @@ spec:
       database: wallabag
       owner: wallabag
       secret:
-        name: wallabag-db-creds
+        name: wallabag-db-credss
       recoveryTarget:
-        targetTime: "2026-02-14 15:00:21.00000+04"
+        targetImmediate: true
   plugins:
   - name: barman-cloud.cloudnative-pg.io
     isWALArchiver: true

@@ -98,11 +98,11 @@ resource "null_resource" "talos_snapshot" {
   }
 }
 
-# Look up the freshly created snapshot by label (only used when snapshot_id is null)
-data "hcloud_image" "talos_by_label" {
-  count             = var.talos.snapshot_id == null ? 1 : 0
-  depends_on        = [null_resource.talos_snapshot]
-  with_selector     = "managed-by=terraform,talos_version=${var.talos.version},schematic_id=${talos_image_factory_schematic.this.id}"
-  most_recent       = true
-  with_architecture = "x86"
+# Read the snapshot ID written by the builder provisioner.
+# Using local_file avoids the Hetzner label API entirely (schematic IDs are
+# 64-char SHA256 hex strings which exceed Hetzner's 63-char label value limit).
+data "local_file" "talos_snapshot_id" {
+  count      = var.talos.snapshot_id == null ? 1 : 0
+  depends_on = [null_resource.talos_snapshot]
+  filename   = "${path.module}/.talos_snapshot_id"
 }

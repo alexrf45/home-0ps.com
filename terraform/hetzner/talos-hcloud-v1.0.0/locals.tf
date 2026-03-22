@@ -10,8 +10,8 @@ locals {
   service_subnet = "10.43.0.0/16"
   coredns_ip     = "10.43.0.10"
 
-  # Talos image: use snapshot_id if provided, else resolve from label selector
-  talos_image_id = var.talos.snapshot_id != null ? var.talos.snapshot_id : data.hcloud_image.talos_by_label[0].id
+  # Talos image: use snapshot_id if provided, else read ID written by builder provisioner
+  talos_image_id = var.talos.snapshot_id != null ? var.talos.snapshot_id : tonumber(trimspace(data.local_file.talos_snapshot_id[0].content))
 
   # Worker node hostnames: key => hostname (used by kubernetes_labels)
   worker_node_names = {

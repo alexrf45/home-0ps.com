@@ -1,7 +1,7 @@
 # servers.tf - Hetzner Cloud servers for control plane and workers
 
 # Pre-allocate stable public IPs for control plane nodes so the cluster
-# endpoint is known before server creation (used in machine configs).
+# endpoint is known before server creation (used in TLS SANs).
 resource "hcloud_primary_ip" "controlplane" {
   for_each      = var.controlplane_nodes
   name          = "${var.cluster_name}-${each.key}-ip"
@@ -19,17 +19,26 @@ resource "hcloud_server" "controlplane" {
   for_each    = var.controlplane_nodes
   name        = "${var.env}-${var.cluster_name}-cp-${random_id.this[each.key].hex}"
   server_type = each.value.server_type
-  image       = local.talos_image_id
+  image       = "ubuntu-24.04"
   location    = var.hcloud.location
 
   firewall_ids = [hcloud_firewall.this.id]
-  ssh_keys     = [] # Talos does not use SSH
+  ssh_keys     = [hcloud_ssh_key.provisioner.id]
 
   public_net {
     ipv4_enabled = true
     ipv4         = hcloud_primary_ip.controlplane[each.key].id
     ipv6_enabled = false
   }
+
+  user_data = templatefile("${path.module}/templates/cp-cloud-init.yaml.tpl", {
+    k3s_token      = random_password.k3s_token.result
+    k3s_channel    = var.k3s.channel
+    pod_cidr       = local.pod_subnet
+    service_cidr   = local.service_subnet
+    cp_public_ip   = hcloud_primary_ip.controlplane[each.key].ip_address
+    cp_private_ip  = each.value.private_ip
+  })
 
   labels = {
     env     = var.env
@@ -38,7 +47,7 @@ resource "hcloud_server" "controlplane" {
   }
 
   lifecycle {
-    ignore_changes = [image]
+    ignore_changes = [user_data, ssh_keys]
   }
 }
 
@@ -53,16 +62,22 @@ resource "hcloud_server" "worker" {
   for_each    = var.worker_nodes
   name        = "${var.env}-${var.cluster_name}-node-${random_id.this[each.key].hex}"
   server_type = each.value.server_type
-  image       = local.talos_image_id
+  image       = "ubuntu-24.04"
   location    = var.hcloud.location
 
   firewall_ids = [hcloud_firewall.this.id]
-  ssh_keys     = []
+  ssh_keys     = [hcloud_ssh_key.provisioner.id]
 
   public_net {
     ipv4_enabled = true
     ipv6_enabled = false
   }
+
+  user_data = templatefile("${path.module}/templates/worker-cloud-init.yaml.tpl", {
+    k3s_token     = random_password.k3s_token.result
+    k3s_channel   = var.k3s.channel
+    cp_private_ip = local.cp_private_ip
+  })
 
   labels = {
     env     = var.env
@@ -71,7 +86,7 @@ resource "hcloud_server" "worker" {
   }
 
   lifecycle {
-    ignore_changes = [image]
+    ignore_changes = [user_data, ssh_keys]
   }
 }
 

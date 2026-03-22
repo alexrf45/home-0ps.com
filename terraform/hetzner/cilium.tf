@@ -1,15 +1,16 @@
-# cilium_config.tf - Cilium CNI helm template for inline manifest bootstrap
-# Cloud variant: l2announcements disabled, no LB IP pool (Hetzner CCM handles LBs)
+# cilium.tf - Cilium CNI installed via Helm after k3s cluster is ready
+# k3s variant: k8sServiceHost = CP private IP, k8sServicePort = 6443,
+# cgroup.autoMount.enabled = true (k3s does not manage cgroups)
 
-data "helm_template" "this" {
-  name       = "cilium"
-  namespace  = var.cilium_config.namespace
-  repository = "https://helm.cilium.io/"
+resource "helm_release" "cilium" {
+  depends_on = [module.hetzner]
 
-  chart        = "cilium"
-  version      = var.cilium_config.cilium_version
-  kube_version = var.cilium_config.kube_version
-  include_crds = true
+  name             = "cilium"
+  namespace        = var.cilium_config.namespace
+  create_namespace = true
+  repository       = "https://helm.cilium.io/"
+  chart            = "cilium"
+  version          = var.cilium_config.cilium_version
 
   values = [
     yamlencode({
@@ -82,15 +83,17 @@ data "helm_template" "this" {
         }
       }
 
+      # k3s manages cgroups normally — enable automount (unlike Talos)
       cgroup = {
         autoMount = {
-          enabled = false
+          enabled = true
         }
         hostRoot = "/sys/fs/cgroup"
       }
 
-      k8sServiceHost = "localhost"
-      k8sServicePort = "7445"
+      # k3s API server is on port 6443, accessible via CP private IP
+      k8sServiceHost = "10.0.1.1"
+      k8sServicePort = "6443"
 
       # Ingress controller disabled — using Gateway API only
       ingressController = {

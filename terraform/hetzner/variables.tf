@@ -14,20 +14,14 @@ variable "env" {
   type        = string
 }
 
-variable "bootstrap_cluster" {
-  description = "Bootstrap the cluster on first apply. Set to false after initial deployment."
-  type        = bool
-  default     = true
-}
-
-variable "talos" {
-  description = "Talos cluster configuration"
+variable "k3s" {
+  description = "k3s distribution configuration"
   type = object({
-    version     = string
-    k8s_version = string
-    extensions  = optional(list(string), [])
-    snapshot_id = optional(number, null)
+    channel = optional(string, "stable")
   })
+  default = {
+    channel = "stable"
+  }
 }
 
 variable "cluster_name" {
@@ -80,8 +74,3 @@ variable "flux_config" {
   sensitive = true
 }
 
-variable "talos_snapshot_id" {
-  type        = number
-  default     = null
-  description = "CI override: snapshot ID captured between build and deploy phases. Takes precedence over talos.snapshot_id."
-}

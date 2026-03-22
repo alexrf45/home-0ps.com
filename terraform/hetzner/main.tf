@@ -8,7 +8,7 @@ module "hetzner" {
     version     = var.talos.version
     k8s_version = var.talos.k8s_version
     extensions  = var.talos.extensions
-    snapshot_id = coalesce(var.talos_snapshot_id, var.talos.snapshot_id)
+    snapshot_id = var.talos_snapshot_id != null ? var.talos_snapshot_id : var.talos.snapshot_id
   }
   hcloud = {
     token        = data.onepassword_item.hcloud_token.credential

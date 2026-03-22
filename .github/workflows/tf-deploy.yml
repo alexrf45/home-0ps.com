@@ -88,11 +88,14 @@ jobs:
         run: terraform init -backend-config="remote.tfbackend" -upgrade
 
       - name: Terraform Plan
-        run: terraform plan -no-color -var-file=decrypted.auto.tfvars -out=plan.out 2>&1 | tee /tmp/plan.txt
+        run: |
+          set -o pipefail
+          terraform plan -no-color -var-file=decrypted.auto.tfvars -out=plan.out 2>&1 | tee /tmp/plan.txt
 
       - name: Terraform Apply
         id: apply
         run: |
+          set -o pipefail
           terraform apply -no-color plan.out 2>&1 | tee /tmp/apply.txt
           LB_IP=$(terraform output -raw lb_ipv4)
           echo "::add-mask::$LB_IP"

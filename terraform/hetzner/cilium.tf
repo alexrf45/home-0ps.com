@@ -1,10 +1,8 @@
-# cilium.tf - Cilium CNI installed via Helm after k3s cluster is ready
-# k3s variant: k8sServiceHost = CP private IP, k8sServicePort = 6443,
-# cgroup.autoMount.enabled = true (k3s does not manage cgroups)
+# cilium.tf - Cilium CNI rendered via helm template, applied via kubectl
+# data.helm_template renders the chart at plan time without cluster credentials.
+# The null_resource applies the manifests after k3s is ready (module.hetzner completes).
 
-resource "helm_release" "cilium" {
-  depends_on = [module.hetzner]
-
+data "helm_template" "cilium" {
   name             = "cilium"
   namespace        = var.cilium_config.namespace
   create_namespace = true
@@ -125,4 +123,30 @@ resource "helm_release" "cilium" {
       }
     })
   ]
+}
+
+resource "local_file" "cilium_manifest" {
+  content  = data.helm_template.cilium.manifest
+  filename = "${path.module}/.cilium-manifest.yaml"
+}
+
+resource "null_resource" "cilium_installed" {
+  depends_on = [module.hetzner, local_file.cilium_manifest]
+
+  triggers = {
+    manifest_hash = sha256(data.helm_template.cilium.manifest)
+  }
+
+  provisioner "local-exec" {
+    environment = {
+      KUBECONFIG = "${path.module}/k3s-hcloud-v1.0.0/.kubeconfig"
+      NAMESPACE  = var.cilium_config.namespace
+      MANIFEST   = "${path.module}/.cilium-manifest.yaml"
+    }
+    command = <<-EOT
+      kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+      kubectl apply -f "$MANIFEST"
+      kubectl rollout status daemonset/cilium -n "$NAMESPACE" --timeout=5m
+    EOT
+  }
 }

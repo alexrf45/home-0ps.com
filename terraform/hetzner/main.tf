@@ -16,7 +16,7 @@ module "hetzner" {
 
 # Namespaces required before Flux bootstrap
 resource "kubernetes_namespace" "flux_system" {
-  depends_on = [module.hetzner, helm_release.cilium]
+  depends_on = [module.hetzner, null_resource.cilium_installed]
   metadata {
     name = "flux-system"
   }
@@ -76,7 +76,7 @@ resource "flux_bootstrap_git" "this" {
   count = var.flux_config.enabled ? 1 : 0
   depends_on = [
     module.hetzner,
-    helm_release.cilium,
+    null_resource.cilium_installed,
     kubernetes_secret.sops_age,
     kubernetes_secret.hcloud_token,
   ]

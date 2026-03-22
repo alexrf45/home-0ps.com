@@ -29,6 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Get short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
       - name: Notify Slack — deploy starting
         uses: slackapi/slack-github-action@v2.0.0
         with:
@@ -47,7 +51,7 @@ jobs:
                   - type: mrkdwn
                     text: "*Triggered by:*\n${{ github.actor }}"
                   - type: mrkdwn
-                    text: "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ github.sha && substring(github.sha, 0, 7) }}`>"
+                    text: "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ steps.sha.outputs.short }}`>"
               - type: actions
                 elements:
                   - type: button

@@ -35,7 +35,7 @@ resource "hcloud_ssh_key" "builder" {
 resource "hcloud_server" "builder" {
   count       = var.talos.snapshot_id == null ? 1 : 0
   name        = "${var.cluster_name}-talos-builder"
-  server_type = "cx11"
+  server_type = "cpx11"
   image       = "debian-12"
   location    = var.hcloud.location
   rescue      = "linux64"

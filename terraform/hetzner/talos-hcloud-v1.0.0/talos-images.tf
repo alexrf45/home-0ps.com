@@ -98,13 +98,20 @@ resource "null_resource" "talos_snapshot" {
   }
 }
 
-# Look up the freshly created snapshot by label.
-# Selector uses only short labels — schematic_id is a 64-char SHA256 hex string
-# which exceeds Hetzner's 63-char label value limit and cannot be used here.
-data "hcloud_image" "talos_by_label" {
-  count             = var.talos.snapshot_id == null ? 1 : 0
-  depends_on        = [null_resource.talos_snapshot]
-  with_selector     = "managed-by=terraform,talos_version=${var.talos.version},cluster=${var.cluster_name}"
-  most_recent       = true
-  with_architecture = "x86"
+# Query Hetzner for the snapshot ID. Uses --data-urlencode so the label
+# selector is properly encoded. Returns {"id":"0"} when no snapshot exists
+# (e.g. during destroy) so the data source never errors out.
+data "external" "talos_snapshot" {
+  count      = var.talos.snapshot_id == null ? 1 : 0
+  depends_on = [null_resource.talos_snapshot]
+  program = ["bash", "-c", <<-EOT
+    curl -sf https://api.hetzner.cloud/v1/images \
+      -H "Authorization: Bearer ${var.hcloud.token}" \
+      -G \
+      --data-urlencode "type=snapshot" \
+      --data-urlencode "label_selector=managed-by=terraform,talos_version=${var.talos.version},cluster=${var.cluster_name}" \
+    | jq -c '{id: (.images // [] | sort_by(.created) | last // {} | .id // 0 | tostring)}' \
+    || echo '{"id":"0"}'
+  EOT
+  ]
 }

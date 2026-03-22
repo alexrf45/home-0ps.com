@@ -6,6 +6,7 @@ module "hetzner" {
   bootstrap_cluster = var.bootstrap_cluster
   talos = {
     version     = var.talos.version
+    k8s_version = var.talos.k8s_version
     extensions  = var.talos.extensions
     snapshot_id = coalesce(var.talos_snapshot_id, var.talos.snapshot_id)
   }

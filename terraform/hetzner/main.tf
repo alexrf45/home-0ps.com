@@ -4,7 +4,11 @@ module "hetzner" {
   env               = var.env
   cluster_name      = var.cluster_name
   bootstrap_cluster = var.bootstrap_cluster
-  talos             = var.talos
+  talos = {
+    version     = var.talos.version
+    extensions  = var.talos.extensions
+    snapshot_id = coalesce(var.talos_snapshot_id, var.talos.snapshot_id)
+  }
   hcloud = {
     token        = data.onepassword_item.hcloud_token.credential
     location     = "ash"

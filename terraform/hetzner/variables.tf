@@ -79,3 +79,9 @@ variable "flux_config" {
   })
   sensitive = true
 }
+
+variable "talos_snapshot_id" {
+  type        = number
+  default     = null
+  description = "CI override: snapshot ID captured between build and deploy phases. Takes precedence over talos.snapshot_id."
+}

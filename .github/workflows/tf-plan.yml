@@ -15,6 +15,9 @@ jobs:
   plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     defaults:
       run:
         working-directory: terraform/hetzner
@@ -38,7 +41,7 @@ jobs:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
           echo "$SOPS_AGE_KEY" > /tmp/age.key
-          SOPS_AGE_KEY_FILE=/tmp/age.key sops --decrypt terraform.tfvars > decrypted.auto.tfvars
+          SOPS_AGE_KEY_FILE=/tmp/age.key sops --decrypt terraform.tfvars.enc > decrypted.auto.tfvars
           rm /tmp/age.key
 
       - name: Write backend config

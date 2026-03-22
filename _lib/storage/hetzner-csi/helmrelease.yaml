@@ -1,0 +1,39 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: hcloud-csi-driver
+  namespace: flux-system
+spec:
+  chart:
+    spec:
+      chart: hcloud-csi-driver
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: HelmRepository
+        name: hcloud-csi
+        namespace: flux-system
+      version: ">=2.0.0 <3.0.0"
+  interval: 15m
+  maxHistory: 3
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: -1
+  upgrade:
+    crds: CreateReplace
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: -1
+  releaseName: hcloud-csi-driver
+  targetNamespace: kube-system
+  values:
+    storageClasses:
+      - name: ${STORAGE_CLASS_NAME}
+        defaultClass: true
+        reclaimPolicy: ${RECLAIM_POLICY}
+        volumeBindingMode: WaitForFirstConsumer
+        allowVolumeExpansion: true
+    secret:
+      name: hcloud-csi-token

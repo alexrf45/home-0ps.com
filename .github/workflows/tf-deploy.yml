@@ -18,6 +18,9 @@ jobs:
   deploy:
     name: Terraform Apply (Production)
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     environment: production
     defaults:
       run:
@@ -69,7 +72,7 @@ jobs:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
           echo "$SOPS_AGE_KEY" > /tmp/age.key
-          SOPS_AGE_KEY_FILE=/tmp/age.key sops --decrypt terraform.tfvars > decrypted.auto.tfvars
+          SOPS_AGE_KEY_FILE=/tmp/age.key sops --decrypt terraform.tfvars.enc > decrypted.auto.tfvars
           rm /tmp/age.key
 
       - name: Write backend config
@@ -87,7 +90,9 @@ jobs:
         id: apply
         run: |
           terraform apply -no-color plan.out 2>&1 | tee /tmp/apply.txt
-          echo "lb_ipv4=$(terraform output -raw lb_ipv4)" >> "$GITHUB_OUTPUT"
+          LB_IP=$(terraform output -raw lb_ipv4)
+          echo "::add-mask::$LB_IP"
+          echo "lb_ipv4=$LB_IP" >> "$GITHUB_OUTPUT"
 
       - name: Post deploy summary
         if: always()
@@ -95,14 +100,9 @@ jobs:
           echo "## Production Deploy" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "**Status:** ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Load Balancer:** \`${{ steps.apply.outputs.lb_ipv4 }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Triggered by:** ${{ github.actor }}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "<details><summary>Apply output</summary>" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          tail -100 /tmp/apply.txt >> "$GITHUB_STEP_SUMMARY" || true
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+          echo "_Infrastructure details sent to Slack._" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Notify Slack — deploy result
         if: always()

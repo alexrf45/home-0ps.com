@@ -30,12 +30,12 @@ resource "null_resource" "k3s_ready" {
       host        = hcloud_server.controlplane[local.first_cp_key].ipv4_address
       user        = "root"
       private_key = tls_private_key.provisioner.private_key_openssh
-      timeout     = "10m"
+      timeout     = "6m"
     }
     inline = [
       "until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 5; done",
       "until kubectl get nodes --kubeconfig /etc/rancher/k3s/k3s.yaml 2>/dev/null | grep -qv 'No resources'; do sleep 10; done",
-      "kubectl wait --for=condition=Ready nodes --all --kubeconfig /etc/rancher/k3s/k3s.yaml --timeout=10m",
+      "kubectl wait --for=condition=Ready nodes --all --kubeconfig /etc/rancher/k3s/k3s.yaml --timeout=6m",
     ]
   }
 

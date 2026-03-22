@@ -1,0 +1,89 @@
+name: Slack Channel Setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel_name:
+        description: 'Slack channel name to create (no # prefix)'
+        required: true
+        type: string
+        default: 'hetzner-deploys'
+
+jobs:
+  setup:
+    name: Create Slack Channel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create channel
+        id: create
+        run: |
+          RESPONSE=$(curl -sf -X POST https://slack.com/api/conversations.create \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\": \"${{ inputs.channel_name }}\"}")
+
+          echo "$RESPONSE" | jq .
+
+          OK=$(echo "$RESPONSE" | jq -r '.ok')
+          if [ "$OK" != "true" ]; then
+            # Channel may already exist — try to find it
+            ERROR=$(echo "$RESPONSE" | jq -r '.error')
+            if [ "$ERROR" = "name_taken" ]; then
+              echo "Channel already exists, looking it up..."
+              CHANNEL_ID=$(curl -sf "https://slack.com/api/conversations.list?limit=1000" \
+                -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" | \
+                jq -r --arg name "${{ inputs.channel_name }}" '.channels[] | select(.name == $name) | .id')
+            else
+              echo "ERROR: $RESPONSE" >&2
+              exit 1
+            fi
+          else
+            CHANNEL_ID=$(echo "$RESPONSE" | jq -r '.channel.id')
+          fi
+
+          echo "channel_id=$CHANNEL_ID" >> "$GITHUB_OUTPUT"
+          echo "Channel ID: $CHANNEL_ID"
+
+      - name: Set channel topic
+        run: |
+          curl -sf -X POST https://slack.com/api/conversations.setTopic \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"channel\": \"${{ steps.create.outputs.channel_id }}\", \"topic\": \"Hetzner cluster deployments | home-0ps.com\"}" \
+            | jq .
+
+      - name: Post welcome message
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "${{ steps.create.outputs.channel_id }}"
+            text: "Slack notifications active for *home-0ps.com* Hetzner pipeline."
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: ":white_check_mark: Hetzner Pipeline Notifications Active"
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "This channel will receive notifications for:\n• *Terraform plan* results on PRs\n• *Test cluster* spin-up and verification\n• *Production deploys* to the Hetzner cluster"
+              - type: context
+                elements:
+                  - type: mrkdwn
+                    text: "Repo: <https://github.com/alexrf45/home-0ps.com|alexrf45/home-0ps.com>"
+
+      - name: Print channel ID for GitHub secret
+        run: |
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Setup Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Channel **#${{ inputs.channel_name }}** is ready." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Add this as a GitHub Actions variable:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Variable | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| \`SLACK_CHANNEL_ID\` | \`${{ steps.create.outputs.channel_id }}\` |" >> "$GITHUB_STEP_SUMMARY"

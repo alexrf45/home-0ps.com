@@ -38,7 +38,7 @@ variable "cluster_name" {
 variable "controlplane_nodes" {
   description = "Control plane node configurations"
   type = map(object({
-    server_type = optional(string, "cx22")
+    server_type = optional(string, "cpx21")
     private_ip  = string
   }))
 }
@@ -46,7 +46,7 @@ variable "controlplane_nodes" {
 variable "worker_nodes" {
   description = "Worker node configurations"
   type = map(object({
-    server_type = optional(string, "cx32")
+    server_type = optional(string, "cpx31")
   }))
   default = {}
 }

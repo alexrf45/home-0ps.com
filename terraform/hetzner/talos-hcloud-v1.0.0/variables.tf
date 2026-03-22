@@ -35,7 +35,7 @@ variable "talos" {
 variable "controlplane_nodes" {
   description = "Control plane node configurations — odd count required for etcd quorum"
   type = map(object({
-    server_type = optional(string, "cx22")
+    server_type = optional(string, "cpx21")
     private_ip  = string # Static private IP within the private subnet, e.g. "10.0.1.1"
   }))
   validation {
@@ -47,7 +47,7 @@ variable "controlplane_nodes" {
 variable "worker_nodes" {
   description = "Worker node configurations — scale independently without touching control plane"
   type = map(object({
-    server_type = optional(string, "cx32")
+    server_type = optional(string, "cpx31")
   }))
   default = {}
 }

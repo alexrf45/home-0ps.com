@@ -1,0 +1,137 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/hetzner/**'
+      - '_clusters/hetzner*/**'
+      - '_lib/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    defaults:
+      run:
+        working-directory: terraform/hetzner
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.10"
+
+      - name: Install SOPS
+        run: |
+          curl -fsSL https://github.com/getsops/sops/releases/latest/download/sops-v$(curl -s https://api.github.com/repos/getsops/sops/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d v).linux.amd64 \
+            -o /usr/local/bin/sops
+          chmod +x /usr/local/bin/sops
+
+      - name: Decrypt tfvars
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          echo "$SOPS_AGE_KEY" > /tmp/age.key
+          SOPS_AGE_KEY_FILE=/tmp/age.key sops --decrypt terraform.tfvars.enc > decrypted.auto.tfvars
+          rm /tmp/age.key
+
+      - name: Write backend config
+        env:
+          TF_BACKEND_CONFIG: ${{ secrets.TF_BACKEND_CONFIG }}
+        run: echo "$TF_BACKEND_CONFIG" > remote.tfbackend
+
+      - name: Terraform Init
+        run: terraform init -backend-config="remote.tfbackend" -upgrade
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -no-color -var-file=decrypted.auto.tfvars 2>&1 | tee /tmp/plan.txt
+          echo "exitcode=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Post plan as PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('/tmp/plan.txt', 'utf8');
+            const truncated = plan.length > 60000 ? plan.slice(-60000) + '\n\n_(output truncated)_' : plan;
+            const body = `## Terraform Plan
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`terraform
+            ${truncated}
+            \`\`\`
+
+            </details>
+
+            **Exit code:** \`${{ steps.plan.outputs.exitcode }}\``;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.startsWith('## Terraform Plan'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Notify Slack on plan failure
+        if: steps.plan.outputs.exitcode != '0'
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "${{ vars.SLACK_CHANNEL_ID }}"
+            text: "Terraform plan failed on PR #${{ github.event.pull_request.number }}"
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: ":x: Terraform Plan Failed"
+              - type: section
+                fields:
+                  - type: mrkdwn
+                    text: "*PR:*\n<${{ github.event.pull_request.html_url }}|#${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}>"
+                  - type: mrkdwn
+                    text: "*Branch:*\n`${{ github.head_ref }}`"
+              - type: actions
+                elements:
+                  - type: button
+                    text:
+                      type: plain_text
+                      text: View Run
+                    url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Fail on plan error
+        if: steps.plan.outputs.exitcode != '0'
+        run: exit 1
+
+      - name: Cleanup
+        if: always()
+        run: rm -f decrypted.auto.tfvars remote.tfbackend

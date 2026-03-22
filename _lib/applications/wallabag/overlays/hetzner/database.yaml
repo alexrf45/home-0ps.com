@@ -18,15 +18,15 @@ spec:
       "pgaudit.log_catalog": "off"
       "pgaudit.log_parameter": "on"
       "pgaudit.log_relation": "on"
-  instances: 3
+  instances: 1
   superuserSecret:
     name: wallabag-db-creds
   storage:
     size: 20Gi
-    storageClass: local-path
+    storageClass: hcloud-volumes
   walStorage:
     size: 5Gi
-    storageClass: local-path
+    storageClass: hcloud-volumes
   bootstrap:
     recovery:
       source: wallabag-prod-cluster
@@ -34,31 +34,28 @@ spec:
       owner: wallabag
       secret:
         name: wallabag-db-creds
-      recoveryTarget:
-        backupID: "20260214T210002"
-        targetImmediate: true
   plugins:
-  - name: barman-cloud.cloudnative-pg.io
-    isWALArchiver: true
-    parameters:
-      barmanObjectName: wallabag-dev-cluster-2026
-  externalClusters:
-  - name: wallabag-prod-cluster
-    plugin:
-      name: barman-cloud.cloudnative-pg.io
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
       parameters:
-        barmanObjectName: wallabag-dev-cluster-backup
-        serverName: wallabag-prod-cluster
+        barmanObjectName: wallabag-hetzner-cluster-2026
+  externalClusters:
+    - name: wallabag-prod-cluster
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: wallabag-dev-cluster-backup
+          serverName: wallabag-prod-cluster
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: wallabag-dev-backup
+  name: wallabag-hetzner-backup
   namespace: wallabag
 spec:
   schedule: "0 0 * * *"
   cluster:
-    name: wallabag-dev-cluster
+    name: wallabag-hetzner-cluster
   backupOwnerReference: self
   method: plugin
   pluginConfiguration:

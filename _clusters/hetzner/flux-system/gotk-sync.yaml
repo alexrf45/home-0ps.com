@@ -20,7 +20,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m0s
-  path: ./_clusters/dev
+  path: ./_clusters/hetzner
   prune: true
   sourceRef:
     kind: GitRepository

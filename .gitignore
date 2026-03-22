@@ -267,6 +267,8 @@ crash.*.log
 # to change depending on the environment.
 *.tfvars
 *.tfvars.json
+# Allow CI override (no secrets — branch name placeholder only)
+!terraform/hetzner/ci-override.tfvars.json
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in

@@ -7,7 +7,7 @@ metadata:
 spec:
   interval: 10m
   retryInterval: 1m
-  path: ./_clusters/dev/config
+  path: ./_clusters/hetzner/config
   prune: false
   sourceRef:
     kind: GitRepository
@@ -31,7 +31,7 @@ spec:
     kind: GitRepository
     name: flux-system
 ---
-# Layer 1: Controllers (all operators)
+# Layer 1: Controllers (all operators + hcloud CCM)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -44,7 +44,7 @@ spec:
   interval: 10m
   retryInterval: 1m
   timeout: 10m0s
-  path: ./_lib/controllers
+  path: ./_lib/controllers/hetzner
   prune: true
   wait: true
   sourceRef:
@@ -142,7 +142,7 @@ spec:
       name: onepassword-connect
       namespace: onepassword
 ---
-# Layer 4: Networking (gateway, tailscale, letsencrypt issuers)
+# Layer 4: Networking (gateway, letsencrypt issuers)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -154,7 +154,7 @@ spec:
   interval: 10m
   retryInterval: 1m
   timeout: 10m0s
-  path: ./_lib/networking
+  path: ./_lib/networking/hetzner
   prune: true
   sourceRef:
     kind: GitRepository
@@ -168,7 +168,7 @@ spec:
       - kind: ConfigMap
         name: cluster-config
 ---
-# Layer 5a: DNS
+# Layer 5a: DNS (Cloudflare ExternalDNS for public records)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -180,7 +180,7 @@ spec:
   interval: 10m
   retryInterval: 1m
   timeout: 10m0s
-  path: ./_lib/dns
+  path: ./_lib/dns/external-dns-cloudflare
   prune: true
   sourceRef:
     kind: GitRepository
@@ -194,7 +194,7 @@ spec:
       - kind: ConfigMap
         name: cluster-config
 ---
-# Layer 5b: Storage
+# Layer 5b: Storage (hcloud CSI + local-path + barman)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -206,7 +206,7 @@ spec:
   interval: 10m
   retryInterval: 1m
   timeout: 10m0s
-  path: ./_lib/storage
+  path: ./_lib/storage/hetzner
   prune: true
   sourceRef:
     kind: GitRepository
@@ -220,7 +220,7 @@ spec:
       - kind: ConfigMap
         name: cluster-config
 ---
-# Layer 6: Security policies (parallel to infrastructure)
+# Layer 6: Security policies
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -263,7 +263,7 @@ spec:
   interval: 10m
   retryInterval: 1m
   timeout: 10m0s
-  path: ./_lib/applications/wallabag/overlays/dev
+  path: ./_lib/applications/wallabag/overlays/hetzner
   prune: true
   sourceRef:
     kind: GitRepository

@@ -1,8 +1,3 @@
-output "talos_config" {
-  value     = module.hetzner.talos_config
-  sensitive = true
-}
-
 output "kubeconfig" {
   value     = module.hetzner.kubeconfig
   sensitive = true

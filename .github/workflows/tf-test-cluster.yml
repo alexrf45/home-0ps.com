@@ -81,10 +81,6 @@ jobs:
           curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VER}/sops-v${SOPS_VER}.linux.amd64" -o /usr/local/bin/sops
           chmod +x /usr/local/bin/sops
 
-          # Talosctl
-          curl -fsSL https://github.com/siderolabs/talos/releases/latest/download/talosctl-linux-amd64 -o /usr/local/bin/talosctl
-          chmod +x /usr/local/bin/talosctl
-
           # Flux CLI
           curl -s https://fluxcd.io/install.sh | sudo bash
 
@@ -114,48 +110,16 @@ jobs:
             -backend-config="key=hetzner-pr-${{ inputs.pr_number }}/terraform.tfstate" \
             -upgrade
 
-      - name: Build Talos Snapshot
-        run: |
-          PR="${{ inputs.pr_number }}"
-          set -o pipefail
-          terraform apply --auto-approve -no-color \
-            -var-file=decrypted.auto.tfvars \
-            -var-file=ci-resolved.tfvars.json \
-            -var "env=pr${PR}" \
-            -var "cluster_name=pr${PR}" \
-            -target=module.hetzner.tls_private_key.builder \
-            -target=module.hetzner.hcloud_ssh_key.builder \
-            -target=module.hetzner.hcloud_server.builder \
-            -target=module.hetzner.null_resource.talos_snapshot \
-            2>&1 | tee /tmp/snapshot.txt
-
-      - name: Capture Snapshot ID
-        id: snapshot
-        run: |
-          SNAP_ID=$(cat talos-hcloud-v1.0.0/.talos_snapshot_id 2>/dev/null || echo "")
-          if [ -z "$SNAP_ID" ] || [ "$SNAP_ID" = "null" ]; then
-            echo "id=" >> "$GITHUB_OUTPUT"
-          else
-            echo "::add-mask::$SNAP_ID"
-            echo "id=$SNAP_ID" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Terraform Apply
         id: apply
         run: |
           PR="${{ inputs.pr_number }}"
           set -o pipefail
-          SNAP_ARGS=""
-          if [ -n "${{ steps.snapshot.outputs.id }}" ]; then
-            SNAP_ARGS="-var talos_snapshot_id=${{ steps.snapshot.outputs.id }}"
-          fi
           terraform apply --auto-approve -no-color \
             -var-file=decrypted.auto.tfvars \
             -var-file=ci-resolved.tfvars.json \
             -var "env=pr${PR}" \
             -var "cluster_name=pr${PR}" \
-            -var "bootstrap_cluster=true" \
-            $SNAP_ARGS \
             2>&1 | tee /tmp/apply.txt
           LB_IP=$(terraform output -raw lb_ipv4)
           ENDPOINT=$(terraform output -raw cluster_endpoint)
@@ -167,45 +131,30 @@ jobs:
       - name: Export configs
         run: |
           terraform output -raw kubeconfig > /tmp/kubeconfig
-          terraform output -raw talos_config > /tmp/talosconfig
           echo "KUBECONFIG=/tmp/kubeconfig" >> "$GITHUB_ENV"
-
-      - name: Extract control plane IP
-        id: cp
-        run: |
-          CP_IP=$(terraform output -raw cluster_endpoint | sed 's|https://||;s|:6443||')
-          echo "::add-mask::$CP_IP"
-          echo "ip=$CP_IP" >> "$GITHUB_OUTPUT"
 
       # Verification suite
       - name: 1. Node readiness
         run: kubectl wait --for=condition=Ready nodes --all --timeout=5m
 
-      - name: 2. Talos health
-        run: |
-          talosctl health \
-            --talosconfig /tmp/talosconfig \
-            --nodes ${{ steps.cp.outputs.ip }} \
-            --wait-timeout 3m
-
-      - name: 3. Flux core layers
+      - name: 2. Flux core layers
         run: |
           flux wait kustomization cluster-config crds controllers \
             --timeout=5m \
             --kubeconfig /tmp/kubeconfig
 
-      - name: 4. Full Flux reconciliation
+      - name: 3. Full Flux reconciliation
         run: |
           flux wait kustomization --all \
             --timeout=15m \
             --kubeconfig /tmp/kubeconfig
 
-      - name: 5. Load balancer reachability
+      - name: 4. Load balancer reachability
         run: |
           LB="${{ steps.apply.outputs.lb_ipv4 }}"
           curl -sf --retry 10 --retry-delay 15 --retry-connrefused "http://${LB}" || true
 
-      - name: 6. Wallabag pod health
+      - name: 5. Wallabag pod health
         run: |
           kubectl wait --for=condition=Ready pod \
             -l app.kubernetes.io/name=wallabag \
@@ -220,8 +169,7 @@ jobs:
             -var-file=decrypted.auto.tfvars \
             -var-file=ci-resolved.tfvars.json \
             -var "env=pr${PR}" \
-            -var "cluster_name=pr${PR}" \
-            -var "bootstrap_cluster=false" || true
+            -var "cluster_name=pr${PR}" || true
 
       - name: Post result to PR
         if: always()
@@ -238,7 +186,6 @@ jobs:
             | Check | Result |
             |---|---|
             | Node readiness | checked |
-            | Talos health | checked |
             | Flux core layers | checked |
             | Full reconciliation | checked |
             | LB reachability | checked |
@@ -284,4 +231,4 @@ jobs:
 
       - name: Cleanup sensitive files
         if: always()
-        run: rm -f decrypted.auto.tfvars remote.tfbackend ci-resolved.tfvars.json /tmp/kubeconfig /tmp/talosconfig
+        run: rm -f decrypted.auto.tfvars remote.tfbackend ci-resolved.tfvars.json /tmp/kubeconfig

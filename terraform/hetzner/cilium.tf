@@ -1,15 +1,15 @@
-# cilium_config.tf - Cilium CNI helm template for inline manifest bootstrap
-# Cloud variant: l2announcements disabled, no LB IP pool (Hetzner CCM handles LBs)
+# cilium.tf - Cilium CNI rendered via helm template, applied via kubectl
+# data.helm_template renders the chart at plan time without cluster credentials.
+# The null_resource applies the manifests after k3s is ready (module.hetzner completes).
 
-data "helm_template" "this" {
-  name       = "cilium"
-  namespace  = var.cilium_config.namespace
-  repository = "https://helm.cilium.io/"
-
-  chart        = "cilium"
-  version      = var.cilium_config.cilium_version
-  kube_version = var.cilium_config.kube_version
-  include_crds = true
+data "helm_template" "cilium" {
+  name             = "cilium"
+  namespace        = var.cilium_config.namespace
+  create_namespace = true
+  repository       = "https://helm.cilium.io/"
+  chart            = "cilium"
+  version          = var.cilium_config.cilium_version
+  kube_version     = var.cilium_config.kube_version
 
   values = [
     yamlencode({
@@ -82,15 +82,17 @@ data "helm_template" "this" {
         }
       }
 
+      # k3s manages cgroups normally — enable automount (unlike Talos)
       cgroup = {
         autoMount = {
-          enabled = false
+          enabled = true
         }
         hostRoot = "/sys/fs/cgroup"
       }
 
-      k8sServiceHost = "localhost"
-      k8sServicePort = "7445"
+      # k3s API server is on port 6443, accessible via CP private IP
+      k8sServiceHost = "10.0.1.1"
+      k8sServicePort = "6443"
 
       # Ingress controller disabled — using Gateway API only
       ingressController = {
@@ -122,4 +124,30 @@ data "helm_template" "this" {
       }
     })
   ]
+}
+
+resource "local_file" "cilium_manifest" {
+  content  = data.helm_template.cilium.manifest
+  filename = "${path.module}/.cilium-manifest.yaml"
+}
+
+resource "null_resource" "cilium_installed" {
+  depends_on = [module.hetzner, local_file.cilium_manifest]
+
+  triggers = {
+    manifest_hash = sha256(data.helm_template.cilium.manifest)
+  }
+
+  provisioner "local-exec" {
+    environment = {
+      KUBECONFIG = "${path.module}/k3s-hcloud-v1.0.0/.kubeconfig"
+      NAMESPACE  = var.cilium_config.namespace
+      MANIFEST   = "${path.module}/.cilium-manifest.yaml"
+    }
+    command = <<-EOT
+      kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+      kubectl apply -f "$MANIFEST"
+      kubectl rollout status daemonset/cilium -n "$NAMESPACE" --timeout=5m
+    EOT
+  }
 }

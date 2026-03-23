@@ -31,11 +31,11 @@ resource "hcloud_firewall" "this" {
     source_ips = ["0.0.0.0/0"]
   }
 
-  # Talos API (bootstrap only)
+  # SSH for Terraform provisioner (bootstrap only)
   rule {
     direction  = "in"
     protocol   = "tcp"
-    port       = "50000"
+    port       = "22"
     source_ips = ["0.0.0.0/0"]
   }
 

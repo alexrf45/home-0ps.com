@@ -87,37 +87,10 @@ jobs:
       - name: Terraform Init
         run: terraform init -backend-config="remote.tfbackend" -upgrade
 
-      - name: Build Talos Snapshot
-        run: |
-          set -o pipefail
-          terraform apply --auto-approve -no-color \
-            -var-file=decrypted.auto.tfvars \
-            -target=module.hetzner.tls_private_key.builder \
-            -target=module.hetzner.hcloud_ssh_key.builder \
-            -target=module.hetzner.hcloud_server.builder \
-            -target=module.hetzner.null_resource.talos_snapshot \
-            2>&1 | tee /tmp/snapshot.txt
-
-      - name: Capture Snapshot ID
-        id: snapshot
-        run: |
-          SNAP_ID=$(cat talos-hcloud-v1.0.0/.talos_snapshot_id 2>/dev/null || echo "")
-          if [ -z "$SNAP_ID" ] || [ "$SNAP_ID" = "null" ]; then
-            echo "No snapshot_id found — snapshot may already exist, continuing without override"
-            echo "id=" >> "$GITHUB_OUTPUT"
-          else
-            echo "::add-mask::$SNAP_ID"
-            echo "id=$SNAP_ID" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Terraform Plan
         run: |
           set -o pipefail
-          SNAP_ARGS=""
-          if [ -n "${{ steps.snapshot.outputs.id }}" ]; then
-            SNAP_ARGS="-var talos_snapshot_id=${{ steps.snapshot.outputs.id }}"
-          fi
-          terraform plan -no-color -var-file=decrypted.auto.tfvars $SNAP_ARGS -out=plan.out 2>&1 | tee /tmp/plan.txt
+          terraform plan -no-color -var-file=decrypted.auto.tfvars -out=plan.out 2>&1 | tee /tmp/plan.txt
 
       - name: Terraform Apply
         id: apply

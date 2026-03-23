@@ -9,6 +9,7 @@ data "helm_template" "cilium" {
   repository       = "https://helm.cilium.io/"
   chart            = "cilium"
   version          = var.cilium_config.cilium_version
+  kube_version     = var.cilium_config.kube_version
 
   values = [
     yamlencode({

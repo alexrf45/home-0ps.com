@@ -36,7 +36,7 @@ resource "hcloud_load_balancer_target" "workers" {
   load_balancer_id = hcloud_load_balancer.this.id
   server_id        = each.value.id
   use_private_ip   = true
-  depends_on       = [hcloud_load_balancer_network.this]
+  depends_on       = [hcloud_load_balancer_network.this, hcloud_server_network.worker]
 }
 
 # Also target control plane nodes (single CP acts as worker too)
@@ -46,5 +46,5 @@ resource "hcloud_load_balancer_target" "controlplane" {
   load_balancer_id = hcloud_load_balancer.this.id
   server_id        = each.value.id
   use_private_ip   = true
-  depends_on       = [hcloud_load_balancer_network.this]
+  depends_on       = [hcloud_load_balancer_network.this, hcloud_server_network.controlplane]
 }

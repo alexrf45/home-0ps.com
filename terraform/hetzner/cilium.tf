@@ -91,7 +91,7 @@ data "helm_template" "cilium" {
       }
 
       # k3s API server is on port 6443, accessible via CP private IP
-      k8sServiceHost = "10.0.1.1"
+      k8sServiceHost = "10.0.1.2"
       k8sServicePort = "6443"
 
       # Ingress controller disabled — using Gateway API only

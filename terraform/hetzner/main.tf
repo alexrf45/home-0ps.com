@@ -72,11 +72,35 @@ resource "kubernetes_secret" "hcloud_token" {
   }
 }
 
+# Pre-install Flux CRDs and controllers so flux_bootstrap_git's internal
+# dry-run finds the Kustomization CRD already established. Without this,
+# the provider applies CRDs and immediately dry-runs a Kustomization object
+# before the API server has finished registering the new CRD.
+resource "null_resource" "flux_pre_install" {
+  depends_on = [null_resource.cilium_installed]
+
+  triggers = {
+    server_id = module.hetzner.cluster_endpoint
+  }
+
+  provisioner "local-exec" {
+    environment = {
+      KUBECONFIG = "${path.module}/k3s-hcloud-v1.0.0/.kubeconfig"
+    }
+    command = <<-EOT
+      flux install --kubeconfig="$KUBECONFIG"
+      kubectl wait --for=condition=Established --timeout=60s \
+        crd/kustomizations.kustomize.toolkit.fluxcd.io \
+        --kubeconfig="$KUBECONFIG"
+    EOT
+  }
+}
+
 resource "flux_bootstrap_git" "this" {
   count = var.flux_config.enabled ? 1 : 0
   depends_on = [
     module.hetzner,
-    null_resource.cilium_installed,
+    null_resource.flux_pre_install,
     kubernetes_secret.sops_age,
     kubernetes_secret.hcloud_token,
   ]

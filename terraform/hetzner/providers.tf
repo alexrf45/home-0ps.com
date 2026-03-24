@@ -2,6 +2,10 @@ provider "hcloud" {
   token = data.onepassword_item.hcloud_token.credential
 }
 
+provider "imager" {
+  hcloud_token = data.onepassword_item.hcloud_token.credential
+}
+
 provider "talos" {}
 
 provider "onepassword" {

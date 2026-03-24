@@ -84,6 +84,9 @@ jobs:
           # Flux CLI
           curl -s https://fluxcd.io/install.sh | sudo bash
 
+          # talosctl
+          curl -sL https://talos.dev/install | sh
+
       - name: Decrypt tfvars
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
@@ -132,6 +135,7 @@ jobs:
         run: |
           terraform output -raw kubeconfig > /tmp/kubeconfig
           echo "KUBECONFIG=/tmp/kubeconfig" >> "$GITHUB_ENV"
+          terraform output -raw talos_config > /tmp/talosconfig 2>/dev/null || true
 
       # Verification suite
       - name: 1. Node readiness
@@ -160,6 +164,18 @@ jobs:
             -l app.kubernetes.io/name=wallabag \
             -n wallabag \
             --timeout=3m
+
+      - name: Pre-destroy Flux cleanup
+        if: always()
+        run: |
+          if [ -f /tmp/kubeconfig ]; then
+            kubectl patch ns flux-system \
+              -p '{"metadata":{"finalizers":[]}}' \
+              --type=merge \
+              --kubeconfig /tmp/kubeconfig 2>/dev/null || true
+            flux suspend kustomization --all \
+              --kubeconfig /tmp/kubeconfig 2>/dev/null || true
+          fi
 
       - name: Destroy test cluster
         if: always()
@@ -231,4 +247,4 @@ jobs:
 
       - name: Cleanup sensitive files
         if: always()
-        run: rm -f decrypted.auto.tfvars remote.tfbackend ci-resolved.tfvars.json /tmp/kubeconfig
+        run: rm -f decrypted.auto.tfvars remote.tfbackend ci-resolved.tfvars.json /tmp/kubeconfig /tmp/talosconfig .kubeconfig

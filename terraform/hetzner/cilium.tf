@@ -81,17 +81,17 @@ data "helm_template" "cilium" {
         }
       }
 
-      # k3s manages cgroups normally — enable automount (unlike Talos)
+      # Talos manages cgroups itself — disable automount
       cgroup = {
         autoMount = {
-          enabled = true
+          enabled = false
         }
         hostRoot = "/sys/fs/cgroup"
       }
 
-      # k3s API server is on port 6443, accessible via CP private IP
-      k8sServiceHost = "10.0.1.2"
-      k8sServicePort = "6443"
+      # Talos uses a local kube-proxy on port 7445
+      k8sServiceHost = "127.0.0.1"
+      k8sServicePort = "7445"
 
       # Ingress controller disabled — using Gateway API only
       ingressController = {
@@ -131,7 +131,7 @@ resource "local_file" "cilium_manifest" {
 }
 
 resource "null_resource" "cilium_installed" {
-  depends_on = [module.hetzner, local_file.cilium_manifest]
+  depends_on = [module.hetzner, local_file.cilium_manifest, local_sensitive_file.kubeconfig]
 
   triggers = {
     manifest_hash = sha256(data.helm_template.cilium.manifest)
@@ -139,7 +139,7 @@ resource "null_resource" "cilium_installed" {
 
   provisioner "local-exec" {
     environment = {
-      KUBECONFIG = "${path.module}/k3s-hcloud-v1.0.0/.kubeconfig"
+      KUBECONFIG = "${path.module}/.kubeconfig"
       NAMESPACE  = var.cilium_config.namespace
       MANIFEST   = "${path.module}/.cilium-manifest.yaml"
     }

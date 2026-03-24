@@ -1,9 +1,9 @@
 module "hetzner" {
-  source = "./k3s-hcloud-v1.0.0"
+  source = "./talos-hcloud-v1.0.0"
 
   env          = var.env
   cluster_name = var.cluster_name
-  k3s          = var.k3s
+  talos        = var.talos
   hcloud = {
     token        = data.onepassword_item.hcloud_token.credential
     location     = var.hcloud.location
@@ -12,17 +12,14 @@ module "hetzner" {
   controlplane_nodes = var.controlplane_nodes
   worker_nodes       = var.worker_nodes
   op_vault_id        = var.op_vault_id
+  bootstrap_cluster  = var.bootstrap_cluster
 }
 
-# Namespaces required before Flux bootstrap
-resource "kubernetes_namespace" "flux_system" {
-  depends_on = [module.hetzner, null_resource.cilium_installed]
-  metadata {
-    name = "flux-system"
-  }
-  lifecycle {
-    ignore_changes = [metadata[0].annotations, metadata[0].labels]
-  }
+# Write kubeconfig to a local file so kubectl/flux provisioners can use it
+resource "local_sensitive_file" "kubeconfig" {
+  depends_on = [module.hetzner]
+  content    = module.hetzner.kubeconfig
+  filename   = "${path.module}/.kubeconfig"
 }
 
 # SOPS Age key from 1Password — created before Flux bootstrap so Flux can decrypt secrets
@@ -35,7 +32,7 @@ data "onepassword_item" "sops_age_key" {
 resource "kubernetes_secret" "sops_age" {
   count = var.flux_config.enabled ? 1 : 0
   depends_on = [
-    kubernetes_namespace.flux_system,
+    module.hetzner,
     data.onepassword_item.sops_age_key,
   ]
   metadata {
@@ -85,7 +82,7 @@ resource "null_resource" "flux_pre_install" {
 
   provisioner "local-exec" {
     environment = {
-      KUBECONFIG = "${path.module}/k3s-hcloud-v1.0.0/.kubeconfig"
+      KUBECONFIG = "${path.module}/.kubeconfig"
     }
     command = <<-EOT
       flux install --kubeconfig="$KUBECONFIG"

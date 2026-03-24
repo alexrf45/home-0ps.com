@@ -14,14 +14,19 @@ variable "env" {
   type        = string
 }
 
-variable "k3s" {
-  description = "k3s distribution configuration"
+variable "talos" {
+  description = "Talos cluster configuration"
   type = object({
-    channel = optional(string, "stable")
+    version     = string
+    k8s_version = string
+    extensions  = optional(list(string), [])
   })
-  default = {
-    channel = "stable"
-  }
+}
+
+variable "bootstrap_cluster" {
+  description = "Bootstrap the cluster on first apply. Set to false after initial deployment."
+  type        = bool
+  default     = true
 }
 
 variable "cluster_name" {

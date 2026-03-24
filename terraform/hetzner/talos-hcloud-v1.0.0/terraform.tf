@@ -1,6 +1,6 @@
-# terraform.tf - Root module for Hetzner cluster
+# terraform.tf - Provider requirements for talos-hcloud v1.0.0
 terraform {
-  required_version = ">= 1.10.0"
+  required_version = ">= 1.9.0"
 
   required_providers {
     hcloud = {
@@ -14,14 +14,6 @@ terraform {
     imager = {
       source  = "hcloud-talos/imager"
       version = "~> 0.1"
-    }
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 3.0"
-    }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.36"
     }
     random = {
       source  = "hashicorp/random"
@@ -43,15 +35,9 @@ terraform {
       source  = "1Password/onepassword"
       version = "3.2.1"
     }
-    null = {
-      source  = "hashicorp/null"
-      version = "~> 3.2"
-    }
-    flux = {
-      source  = "fluxcd/flux"
-      version = "1.7.6"
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.36"
     }
   }
-
-  backend "s3" {}
 }

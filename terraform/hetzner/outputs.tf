@@ -3,6 +3,11 @@ output "kubeconfig" {
   sensitive = true
 }
 
+output "talos_config" {
+  value     = module.hetzner.talos_config
+  sensitive = true
+}
+
 output "lb_ipv4" {
   value       = module.hetzner.lb_ipv4
   description = "Hetzner Load Balancer IPv4 — point application DNS here"

@@ -92,10 +92,10 @@ jobs:
 
       - name: Restore kubeconfig from state
         run: |
-          if terraform output -raw kubeconfig 2>/dev/null > k3s-hcloud-v1.0.0/.kubeconfig; then
+          if terraform output -raw kubeconfig 2>/dev/null > .kubeconfig; then
             echo "Kubeconfig restored from Terraform state"
           else
-            rm -f k3s-hcloud-v1.0.0/.kubeconfig
+            rm -f .kubeconfig
             echo "No kubeconfig in state yet (fresh cluster)"
           fi
 

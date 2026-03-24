@@ -2,6 +2,8 @@ provider "hcloud" {
   token = data.onepassword_item.hcloud_token.credential
 }
 
+provider "talos" {}
+
 provider "onepassword" {
   service_account_token = var.op_service_account_token
 }

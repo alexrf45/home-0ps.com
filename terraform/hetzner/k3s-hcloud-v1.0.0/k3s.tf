@@ -24,7 +24,9 @@ resource "null_resource" "k3s_ready" {
     server_id = hcloud_server.controlplane[local.first_cp_key].id
   }
 
-  # Wait until k3s is running and all nodes are Ready
+  # Wait until k3s is running and all nodes have registered with the API.
+  # Do NOT wait for Ready — nodes stay NotReady until Cilium is installed,
+  # which happens in the root module after this resource completes.
   provisioner "remote-exec" {
     connection {
       host        = hcloud_server.controlplane[local.first_cp_key].ipv4_address
@@ -35,7 +37,6 @@ resource "null_resource" "k3s_ready" {
     inline = [
       "until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 5; done",
       "until kubectl get nodes --kubeconfig /etc/rancher/k3s/k3s.yaml 2>/dev/null | grep -qv 'No resources'; do sleep 10; done",
-      "kubectl wait --for=condition=Ready nodes --all --kubeconfig /etc/rancher/k3s/k3s.yaml --timeout=6m",
     ]
   }
 

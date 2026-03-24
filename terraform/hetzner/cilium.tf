@@ -147,6 +147,8 @@ resource "null_resource" "cilium_installed" {
       kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
       kubectl apply -f "$MANIFEST"
       kubectl rollout status daemonset/cilium -n "$NAMESPACE" --timeout=5m
+      kubectl rollout status deployment/cilium-operator -n "$NAMESPACE" --timeout=3m
+      kubectl rollout status deployment/coredns -n kube-system --timeout=3m
     EOT
   }
 }

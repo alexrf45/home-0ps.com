@@ -92,6 +92,22 @@ resource "null_resource" "flux_pre_install" {
       kubectl wait --for=condition=Established --timeout=60s \
         crd/kustomizations.kustomize.toolkit.fluxcd.io \
         --kubeconfig="$KUBECONFIG"
+      echo "Verifying cluster DNS can reach external hosts..."
+      RETRIES=0
+      until kubectl exec -n kube-system \
+        "$(kubectl get pod -n kube-system -l k8s-app=kube-dns \
+           -o jsonpath='{.items[0].metadata.name}' --kubeconfig="$KUBECONFIG")" \
+        --kubeconfig="$KUBECONFIG" -- \
+        nslookup github.com 2>/dev/null | grep -q "Address:"; do
+        RETRIES=$((RETRIES+1))
+        if [ "$RETRIES" -ge 18 ]; then
+          echo "DNS not operational after 3 minutes, aborting"
+          exit 1
+        fi
+        echo "DNS not ready yet (attempt $RETRIES/18), retrying in 10s..."
+        sleep 10
+      done
+      echo "DNS verified OK"
     EOT
   }
 }

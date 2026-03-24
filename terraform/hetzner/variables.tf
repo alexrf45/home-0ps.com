@@ -29,6 +29,15 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "hcloud" {
+  description = "Hetzner Cloud datacenter configuration"
+  type = object({
+    location     = optional(string, "hil")
+    network_zone = optional(string, "us-west")
+  })
+  default = {}
+}
+
 variable "controlplane_nodes" {
   description = "Control plane node configurations"
   type = map(object({

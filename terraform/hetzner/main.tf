@@ -6,8 +6,8 @@ module "hetzner" {
   k3s          = var.k3s
   hcloud = {
     token        = data.onepassword_item.hcloud_token.credential
-    location     = "hil"
-    network_zone = "us-west"
+    location     = var.hcloud.location
+    network_zone = var.hcloud.network_zone
   }
   controlplane_nodes = var.controlplane_nodes
   worker_nodes       = var.worker_nodes

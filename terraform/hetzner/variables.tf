@@ -74,13 +74,9 @@ variable "cilium_config" {
 }
 
 variable "flux_config" {
-  description = "Flux GitOps configuration"
+  description = "Flux GitOps bootstrap configuration (git source managed by flux CLI in Phase 2)"
   type = object({
     enabled           = bool
-    git_url           = string
-    cluster_path      = string
-    branch            = string
-    cluster_domain    = string
     sops_secret_name  = string
     sops_age_key_name = string
     sops_age_op_title = string

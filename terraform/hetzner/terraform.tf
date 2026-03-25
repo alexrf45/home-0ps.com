@@ -47,10 +47,6 @@ terraform {
       source  = "hashicorp/null"
       version = "~> 3.2"
     }
-    flux = {
-      source  = "fluxcd/flux"
-      version = "1.7.6"
-    }
   }
 
   backend "s3" {}

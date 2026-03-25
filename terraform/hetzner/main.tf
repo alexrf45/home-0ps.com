@@ -69,10 +69,8 @@ resource "kubernetes_secret" "hcloud_token" {
   }
 }
 
-# Pre-install Flux CRDs and controllers so flux_bootstrap_git's internal
-# dry-run finds the Kustomization CRD already established. Without this,
-# the provider applies CRDs and immediately dry-runs a Kustomization object
-# before the API server has finished registering the new CRD.
+# Pre-install Flux CRDs and controllers and verify DNS health.
+# This is Phase 1's final gate — Phase 2 (flux bootstrap git) runs only after this passes.
 resource "null_resource" "flux_pre_install" {
   depends_on = [null_resource.cilium_installed]
 
@@ -109,16 +107,3 @@ resource "null_resource" "flux_pre_install" {
   }
 }
 
-resource "flux_bootstrap_git" "this" {
-  count = var.flux_config.enabled ? 1 : 0
-  depends_on = [
-    module.hetzner,
-    null_resource.flux_pre_install,
-    kubernetes_secret.sops_age,
-    kubernetes_secret.hcloud_token,
-  ]
-
-  cluster_domain     = var.flux_config.cluster_domain
-  path               = var.flux_config.cluster_path
-  embedded_manifests = true
-}

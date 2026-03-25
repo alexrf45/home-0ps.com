@@ -1,0 +1,275 @@
+name: Hetzner Cloud Deploy
+
+on:
+  push:
+    branches:
+      - cloud-ops
+    paths:
+      - 'terraform/hetzner/**'
+      - '_clusters/hetzner/**'
+      - '_lib/**'
+  workflow_dispatch:
+    inputs:
+      skip_terraform:
+        description: 'Skip terraform phase (re-run flux bootstrap only)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Provision Talos + Cilium
+    if: ${{ !inputs.skip_terraform }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    defaults:
+      run:
+        working-directory: terraform/hetzner
+    outputs:
+      lb_ipv4: ${{ steps.apply.outputs.lb_ipv4 }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack — deploy starting
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "${{ vars.SLACK_CHANNEL_ID }}"
+            text: "Hetzner deploy started on `cloud-ops`"
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: ":rocket: Hetzner Deploy Starting"
+              - type: section
+                fields:
+                  - type: mrkdwn
+                    text: "*Triggered by:*\n${{ github.actor }}"
+                  - type: mrkdwn
+                    text: "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ steps.sha.outputs.short }}`>"
+              - type: actions
+                elements:
+                  - type: button
+                    text:
+                      type: plain_text
+                      text: View Run
+                    url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.10"
+
+      - name: Install Flux CLI
+        run: curl -s https://fluxcd.io/install.sh | sudo bash
+
+      - name: Install SOPS
+        run: |
+          SOPS_VER=$(curl -s https://api.github.com/repos/getsops/sops/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d v)
+          curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VER}/sops-v${SOPS_VER}.linux.amd64" -o /usr/local/bin/sops
+          chmod +x /usr/local/bin/sops
+
+      - name: Decrypt tfvars
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          echo "$SOPS_AGE_KEY" > /tmp/age.key
+          SOPS_AGE_KEY_FILE=/tmp/age.key sops --decrypt terraform.tfvars.enc > decrypted.auto.tfvars
+          rm /tmp/age.key
+
+      - name: Write backend config
+        env:
+          TF_BACKEND_CONFIG: ${{ secrets.TF_BACKEND_CONFIG }}
+        run: echo "$TF_BACKEND_CONFIG" > remote.tfbackend
+
+      - name: Terraform Init
+        run: terraform init -backend-config="remote.tfbackend" -upgrade
+
+      - name: Restore kubeconfig from state
+        run: |
+          if terraform output -raw kubeconfig 2>/dev/null > .kubeconfig; then
+            echo "Kubeconfig restored from Terraform state"
+          else
+            rm -f .kubeconfig
+            echo "No kubeconfig in state yet (fresh cluster)"
+          fi
+
+      - name: Terraform Plan
+        run: |
+          set -o pipefail
+          terraform plan -no-color -var-file=decrypted.auto.tfvars -out=plan.out 2>&1 | tee /tmp/plan.txt
+
+      - name: Terraform Apply
+        id: apply
+        run: |
+          set -o pipefail
+          terraform apply -no-color plan.out 2>&1 | tee /tmp/apply.txt
+          LB_IP=$(terraform output -raw lb_ipv4)
+          echo "::add-mask::$LB_IP"
+          echo "lb_ipv4=$LB_IP" >> "$GITHUB_OUTPUT"
+
+      - name: Verify cluster nodes ready
+        run: |
+          export KUBECONFIG="$(pwd)/.kubeconfig"
+          kubectl wait --for=condition=Ready nodes --all --timeout=5m
+
+      - name: Notify Slack — terraform result
+        if: always()
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "${{ vars.SLACK_CHANNEL_ID }}"
+            text: "Hetzner terraform phase ${{ job.status }}"
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "${{ job.status == 'success' && ':white_check_mark: Terraform Phase Complete' || ':x: Terraform Phase Failed' }}"
+              - type: section
+                fields:
+                  - type: mrkdwn
+                    text: "*Status:*\n${{ job.status }}"
+                  - type: mrkdwn
+                    text: "*Load Balancer:*\n`${{ steps.apply.outputs.lb_ipv4 }}`"
+                  - type: mrkdwn
+                    text: "*Triggered by:*\n${{ github.actor }}"
+                  - type: mrkdwn
+                    text: "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ github.sha }}`>"
+              - type: actions
+                elements:
+                  - type: button
+                    text:
+                      type: plain_text
+                      text: View Run
+                    url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Cleanup sensitive files
+        if: always()
+        run: rm -f decrypted.auto.tfvars remote.tfbackend plan.out
+
+  flux-bootstrap:
+    name: Bootstrap Flux GitOps
+    runs-on: ubuntu-latest
+    needs: terraform
+    # Run if terraform succeeded, or if terraform was skipped (manual re-run with skip_terraform=true)
+    if: always() && (needs.terraform.result == 'success' || needs.terraform.result == 'skipped')
+    environment: production
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    defaults:
+      run:
+        working-directory: terraform/hetzner
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.10"
+
+      - name: Install Flux CLI
+        run: curl -s https://fluxcd.io/install.sh | sudo bash
+
+      - name: Install SOPS
+        run: |
+          SOPS_VER=$(curl -s https://api.github.com/repos/getsops/sops/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d v)
+          curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VER}/sops-v${SOPS_VER}.linux.amd64" -o /usr/local/bin/sops
+          chmod +x /usr/local/bin/sops
+
+      - name: Decrypt tfvars
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          echo "$SOPS_AGE_KEY" > /tmp/age.key
+          SOPS_AGE_KEY_FILE=/tmp/age.key sops --decrypt terraform.tfvars.enc > decrypted.auto.tfvars
+          rm /tmp/age.key
+
+      - name: Write backend config
+        env:
+          TF_BACKEND_CONFIG: ${{ secrets.TF_BACKEND_CONFIG }}
+        run: echo "$TF_BACKEND_CONFIG" > remote.tfbackend
+
+      - name: Terraform Init
+        run: terraform init -backend-config="remote.tfbackend" -upgrade
+
+      - name: Restore kubeconfig from state
+        run: |
+          terraform output -raw kubeconfig > /tmp/kubeconfig
+          echo "KUBECONFIG=/tmp/kubeconfig" >> "$GITHUB_ENV"
+
+      - name: Guard — wait for nodes ready
+        run: kubectl wait --for=condition=Ready nodes --all --timeout=2m
+
+      - name: Flux bootstrap git
+        env:
+          GITHUB_TOKEN: ${{ secrets.FLUX_GITHUB_TOKEN }}
+        run: |
+          flux bootstrap git \
+            --url=https://github.com/alexrf45/home-0ps.com.git \
+            --branch=cloud-ops \
+            --path=_clusters/hetzner \
+            --token-auth
+
+      - name: Wait for all Kustomizations
+        run: flux wait kustomization --all --timeout=15m
+
+      - name: Post deploy summary
+        if: always()
+        run: |
+          echo "## Hetzner Cloud Deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Status:** ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Branch:** cloud-ops" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Triggered by:** ${{ github.actor }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify Slack — flux bootstrap result
+        if: always()
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "${{ vars.SLACK_CHANNEL_ID }}"
+            text: "Hetzner flux bootstrap ${{ job.status }}"
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "${{ job.status == 'success' && ':white_check_mark: Flux Bootstrap Complete' || ':x: Flux Bootstrap Failed' }}"
+              - type: section
+                fields:
+                  - type: mrkdwn
+                    text: "*Status:*\n${{ job.status }}"
+                  - type: mrkdwn
+                    text: "*Branch:*\n`cloud-ops`"
+                  - type: mrkdwn
+                    text: "*Triggered by:*\n${{ github.actor }}"
+                  - type: mrkdwn
+                    text: "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ github.sha }}`>"
+              - type: actions
+                elements:
+                  - type: button
+                    text:
+                      type: plain_text
+                      text: View Run
+                    url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Cleanup sensitive files
+        if: always()
+        run: rm -f decrypted.auto.tfvars remote.tfbackend

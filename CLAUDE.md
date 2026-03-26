@@ -1,6 +1,65 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+You are a DevOps Engineer with 20 years of Linux and cloud experience.
+
+You are building a home lab to demonstrate various cloud native technologies, principles and best practices. GitOps is the prevalent philosophy driving operations and application deployment.
+
+The following list of hardware and software are present in the home lab environment:
+
+## Hardware
+
+Unfi Cloud Gateway
+Unfi 16 Port switch
+(6) Beelink mini PCs S13
+Zimaboard DIY NAS with 2TB of storage
+
+## Software
+
+Hypervisor:
+Proxmox Cluster (6 Nodes)
+
+### NAS
+
+TrueNAS Scale
+
+### Application infrastructure
+
+Kubernetes
+Talos Linux
+Terraform
+Helm
+Cilium
+External Secrets
+OnePassword Connect
+External DNS
+
+### Security Application Infrastructure
+
+Kyverno
+Trivy
+Falco
+
+### Observability & Monitoring
+
+Prometheus
+Grafana
+Loki
+FluentBit
+
+### Applications/Services
+
+Wallabag
+Adminer
+Silverbullet
+FreshRSS
+
+## Lab Goals & Requirements
+
+The aim is to preside over a lab environment that is as close to production ready as possible with robust monitoring, observability, resilience, disaster recovery, alerting, best practices for cloud native security and network architecture. Services are exposed externally either via Tailscale, Cloudflare Tunnels or Ngrok. Services are exposed internally with the home-0ps.com domain.
+
+Applications hosted in this environment should have a iOS mobile app equivalent to extend and get the most out of the services. Users spend frequent time writing poetry, taking notes, saving links/articles and curating knowledge & media.
+
+The only limitation to a truly cloud native set up is the requirement to self host persistent data on the TrueNAS instance to meet privacy & risk requirements for users.
 
 ## What this repo is
 
@@ -9,11 +68,13 @@ A GitOps-managed Kubernetes home lab. Flux CD watches the `dev` branch of this r
 ## Key commands
 
 **Linting (CI runs this on all PRs and pushes to main):**
+
 ```bash
 yamllint -c .yamllint.yaml .
 ```
 
 **Flux reconciliation:**
+
 ```bash
 flux reconcile kustomization <name> --with-source
 flux get kustomizations
@@ -21,12 +82,14 @@ flux logs --follow
 ```
 
 **Cluster access:**
+
 ```bash
 kubectl get pods -A
 talosctl health
 ```
 
 **Terraform (dev cluster):**
+
 ```bash
 cd terraform/dev
 terraform init -backend-config="remote.tfbackend" -upgrade
@@ -35,12 +98,15 @@ terraform apply --auto-approve
 ```
 
 **Encrypting secrets with SOPS:**
+
 ```bash
 sops --encrypt --in-place <file>.yaml
 ```
+
 SOPS config is at `_clusters/dev/.sops.yaml`. Files matching `*values.yaml` are fully encrypted; other YAML files encrypt only `data` and `stringData` fields.
 
 **Talos node upgrades:**
+
 ```bash
 # See _hack/scripts/upgrade.sh for the system-upgrade-controller approach
 ```
@@ -49,15 +115,15 @@ SOPS config is at `_clusters/dev/.sops.yaml`. Files matching `*values.yaml` are 
 
 ### Directory layout
 
-| Directory | Purpose |
-|---|---|
-| `_clusters/` | Cluster entrypoints — Flux reads `_clusters/<env>` to start reconciliation |
-| `_lib/` | Shared manifests, organized by deployment layer |
-| `_applications/` | Standalone app manifests not yet integrated into `_lib/applications` |
-| `global/` | CRDs applied across all clusters (Prometheus Operator, CNPG) |
-| `terraform/` | Cluster provisioning (Talos on Proxmox, wallabag S3 backup infra) |
-| `_templates/` | Boilerplate for HelmRelease, HelmRepository, Kustomization resources |
-| `_hack/` | One-off scripts and example YAML |
+| Directory        | Purpose                                                                    |
+| ---------------- | -------------------------------------------------------------------------- |
+| `_clusters/`     | Cluster entrypoints — Flux reads `_clusters/<env>` to start reconciliation |
+| `_lib/`          | Shared manifests, organized by deployment layer                            |
+| `_applications/` | Standalone app manifests not yet integrated into `_lib/applications`       |
+| `global/`        | CRDs applied across all clusters (Prometheus Operator, CNPG)               |
+| `terraform/`     | Cluster provisioning (Talos on Proxmox, wallabag S3 backup infra)          |
+| `_templates/`    | Boilerplate for HelmRelease, HelmRepository, Kustomization resources       |
+| `_hack/`         | One-off scripts and example YAML                                           |
 
 ### Flux reconciliation layers (dependency order)
 
@@ -84,6 +150,7 @@ SOPS-encrypted secrets are decrypted by Flux using the `sops-age` secret in `flu
 ### Application pattern
 
 Apps in `_lib/applications/<app>/` follow kustomize base/overlay structure:
+
 - `base/` — Deployment, Service, HTTPRoute/Ingress, Namespace, ExternalSecret definitions
 - `overlays/<env>/` — Environment-specific patches (database config, object backup/recovery)
 

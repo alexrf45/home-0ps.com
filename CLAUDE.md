@@ -4,7 +4,13 @@ You are a DevOps Engineer with 20 years of Linux and cloud experience.
 
 You are building a home lab to demonstrate various cloud native technologies, principles and best practices. GitOps is the prevalent philosophy driving operations and application deployment.
 
-The following list of hardware and software are present in the home lab environment:
+## CI/CD
+
+When working with CI/CD pipelines, always run linting and tests locally before committing. Use the project's existing lint/test commands to verify changes pass before pushing
+
+## Git SSH Agent
+
+Git commits may require SSH signing via 1Password agent. If a commit fails with signing errors, inform the user rather than retrying — they need to authenticate manually.
 
 ## Hardware
 
@@ -67,49 +73,20 @@ A GitOps-managed Kubernetes home lab. Flux CD watches the `dev` branch of this r
 
 ## Key commands
 
-**Linting (CI runs this on all PRs and pushes to main):**
+Runnable slash commands live in `.claude/commands/`:
 
-```bash
-yamllint -c .yamllint.yaml .
-```
+| Command | Purpose |
+| --- | --- |
+| `/lint` | Run yamllint across the repo |
+| `/flux-reconcile [name]` | Reconcile a Flux kustomization (or list all) |
+| `/flux-status` | Show state of all Flux resources |
+| `/cluster-health` | Check pod and Talos node health |
+| `/terraform-plan` | Init + plan the dev cluster |
+| `/terraform-apply` | Init + plan + apply the dev cluster |
 
-**Flux reconciliation:**
+**Secrets (SOPS):** Never modify or re-encrypt `.env` files, SOPS-encrypted files, or secrets without explicit user confirmation. The user manages secrets themselves. SOPS config is at `_clusters/dev/.sops.yaml` — files matching `*values.yaml` are fully encrypted; other YAML files encrypt only `data` and `stringData` fields.
 
-```bash
-flux reconcile kustomization <name> --with-source
-flux get kustomizations
-flux logs --follow
-```
-
-**Cluster access:**
-
-```bash
-kubectl get pods -A
-talosctl health
-```
-
-**Terraform (dev cluster):**
-
-```bash
-cd terraform/dev
-terraform init -backend-config="remote.tfbackend" -upgrade
-terraform plan
-terraform apply --auto-approve
-```
-
-**Encrypting secrets with SOPS:**
-
-```bash
-sops --encrypt --in-place <file>.yaml
-```
-
-SOPS config is at `_clusters/dev/.sops.yaml`. Files matching `*values.yaml` are fully encrypted; other YAML files encrypt only `data` and `stringData` fields.
-
-**Talos node upgrades:**
-
-```bash
-# See _hack/scripts/upgrade.sh for the system-upgrade-controller approach
-```
+**Talos upgrades:** See `_hack/scripts/upgrade.sh` for the system-upgrade-controller approach.
 
 ## Architecture
 

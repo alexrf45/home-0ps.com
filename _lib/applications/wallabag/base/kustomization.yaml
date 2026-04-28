@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - secrets.yaml
+  - su-shim-configmap.yaml
   - deployment.yaml
   - service.yaml
   - ingress.yaml

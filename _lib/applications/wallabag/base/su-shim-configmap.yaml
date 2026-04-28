@@ -1,0 +1,41 @@
+---
+# su(1) passthrough shim for wallabag.
+#
+# The wallabag/wallabag entrypoint runs `su -c "<cmd>" -s /bin/sh nobody`
+# unconditionally (composer install, plus migrate/import modes). su is a
+# SUID binary; in this Talos cluster the kernel is not honoring the SUID
+# bit even with allowPrivilegeEscalation: true, so BusyBox su dies with
+# "must be suid to work properly".
+#
+# Since the main container already runs as UID 65534 (nobody) — matching
+# what the entrypoint wants to su to — actual privilege switching is
+# unnecessary. This shim parses su's flags and just exec's the command
+# directly. It's mounted at /opt/shims/su and PATH is prepended so the
+# entrypoint resolves to this script instead of BusyBox su.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wallabag-shims
+  namespace: wallabag
+  labels:
+    app.kubernetes.io/name: wallabag
+    app.kubernetes.io/instance: wallabag-${ENVIRONMENT}
+data:
+  su: |
+    #!/bin/sh
+    # su(1) passthrough — see configmap description for context.
+    cmd=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        -c)         shift; cmd="$1"; shift ;;
+        -s)         shift; shift ;;
+        -l|--login) shift ;;
+        --)         shift; break ;;
+        -*)         shift ;;
+        *)          shift ;;
+      esac
+    done
+    if [ -z "$cmd" ]; then
+      exec /bin/sh "$@"
+    fi
+    exec /bin/sh -c "$cmd"

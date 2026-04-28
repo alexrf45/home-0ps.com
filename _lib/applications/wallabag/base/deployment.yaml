@@ -78,17 +78,18 @@ spec:
         image: wallabag/wallabag:${WALLABAG_VERSION}
         imagePullPolicy: Always
         # The wallabag entrypoint runs `su -c "composer install" nobody`
-        # unconditionally and `su -c "bin/console ..."` for import/migrate
-        # modes. `su` is a SUID binary (BusyBox); allowPrivilegeEscalation
-        # must be true so the kernel honors the SUID bit. Capabilities are
-        # still dropped to all-but-NET_BIND_SERVICE, so the worst case from
-        # SUID elevation is root-without-caps inside the pod — narrow
-        # attack surface relative to running as root from the start.
+        # unconditionally (and for import/migrate modes). SUID-based privilege
+        # switching doesn't work in this cluster — Talos's containerd applies
+        # restrictions that prevent the SUID bit from elevating EUID even
+        # with allowPrivilegeEscalation: true. We sidestep this by mounting
+        # a passthrough `su` shim at /opt/shims/su (configmap wallabag-shims)
+        # and prepending it to PATH below; the entrypoint resolves to the
+        # shim instead of BusyBox su, no privilege change needed.
         securityContext:
           runAsNonRoot: true
           runAsUser: 65534
           runAsGroup: 65534
-          allowPrivilegeEscalation: true
+          allowPrivilegeEscalation: false
           readOnlyRootFilesystem: false
           capabilities:
             drop:
@@ -109,7 +110,12 @@ spec:
         volumeMounts:
         - name: wallabag-php-conf
           mountPath: /etc/php81/conf.d
+        - name: wallabag-shims
+          mountPath: /opt/shims
+          readOnly: true
         env:
+        - name: PATH
+          value: "/opt/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         - name: SYMFONY__ENV__DATABASE_USER
           valueFrom:
             secretKeyRef:
@@ -166,3 +172,10 @@ spec:
       volumes:
       - name: wallabag-php-conf
         emptyDir: {}
+      - name: wallabag-shims
+        configMap:
+          name: wallabag-shims
+          defaultMode: 0755
+          items:
+          - key: su
+            path: su

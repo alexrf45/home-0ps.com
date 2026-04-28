@@ -36,10 +36,11 @@ spec:
       # images directly — no shadow mounts needed.
       #
       # Paths the image leaves root-owned that the entrypoint writes at
-      # startup: /etc/php81/conf.d/ (50_wallabag.ini from PHP_MEMORY_LIMIT),
-      # /etc/s6/ (s6-svscan lockfile), /var/lib/nginx/ (nginx logs + tmp).
-      # This init container (root) seeds each into an emptyDir and chowns
-      # to 65534 so the main container can write them without privilege.
+      # startup: /etc/php81/conf.d/ (50_wallabag.ini), /etc/s6/ (s6-svscan
+      # lockfile), /var/lib/nginx/ (logs + tmp), /var/run/ (nginx.pid),
+      # /var/log/ (php-fpm.log). This init container (root) seeds each into
+      # an emptyDir and chowns to 65534 so the main container can write
+      # them without privilege.
       - name: seed-writable-dirs
         image: wallabag/wallabag:${WALLABAG_VERSION}
         imagePullPolicy: Always
@@ -65,7 +66,9 @@ spec:
           cp -a /etc/php81/conf.d/. /seed/php-conf/
           cp -a /etc/s6/. /seed/s6/
           cp -a /var/lib/nginx/. /seed/nginx-lib/
-          chown -R 65534:65534 /seed/php-conf /seed/s6 /seed/nginx-lib
+          cp -a /var/run/. /seed/varrun/ 2>/dev/null || true
+          cp -a /var/log/. /seed/varlog/ 2>/dev/null || true
+          chown -R 65534:65534 /seed/php-conf /seed/s6 /seed/nginx-lib /seed/varrun /seed/varlog
         resources:
           requests:
             memory: 32Mi
@@ -80,6 +83,10 @@ spec:
           mountPath: /seed/s6
         - name: wallabag-nginx-lib
           mountPath: /seed/nginx-lib
+        - name: wallabag-varrun
+          mountPath: /seed/varrun
+        - name: wallabag-varlog
+          mountPath: /seed/varlog
       containers:
       - name: wallabag-web
         image: wallabag/wallabag:${WALLABAG_VERSION}
@@ -121,6 +128,10 @@ spec:
           mountPath: /etc/s6
         - name: wallabag-nginx-lib
           mountPath: /var/lib/nginx
+        - name: wallabag-varrun
+          mountPath: /var/run
+        - name: wallabag-varlog
+          mountPath: /var/log
         - name: wallabag-shims
           mountPath: /opt/shims
           readOnly: true
@@ -186,6 +197,10 @@ spec:
       - name: wallabag-s6
         emptyDir: {}
       - name: wallabag-nginx-lib
+        emptyDir: {}
+      - name: wallabag-varrun
+        emptyDir: {}
+      - name: wallabag-varlog
         emptyDir: {}
       - name: wallabag-shims
         configMap:

@@ -95,12 +95,12 @@ Runnable slash commands live in `.claude/commands/`:
 | Directory        | Purpose                                                                    |
 | ---------------- | -------------------------------------------------------------------------- |
 | `_clusters/`     | Cluster entrypoints — Flux reads `_clusters/<env>` to start reconciliation |
-| `_lib/`          | Shared manifests, organized by deployment layer                            |
-| `_applications/` | Standalone app manifests not yet integrated into `_lib/applications`       |
+| `_lib/`          | Shared manifests, organized by deployment layer (controllers, pki, secrets, networking, dns, storage, security, applications) |
 | `global/`        | CRDs applied across all clusters (Prometheus Operator, CNPG)               |
 | `terraform/`     | Cluster provisioning (Talos on Proxmox, wallabag S3 backup infra)          |
 | `_templates/`    | Boilerplate for HelmRelease, HelmRepository, Kustomization resources       |
 | `_hack/`         | One-off scripts and example YAML                                           |
+| `_docs/`         | Reviews, runbooks, migration notes                                         |
 
 ### Flux reconciliation layers (dependency order)
 

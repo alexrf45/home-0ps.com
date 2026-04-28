@@ -36,10 +36,41 @@ variable "talos" {
     control_plane_extensions = list(string)
     worker_extensions        = list(string)
     platform                 = optional(string, "nocloud")
+    pod_subnet               = optional(string, "10.42.0.0/16")
+    service_subnet           = optional(string, "10.43.0.0/16")
+    cluster_dns_ip           = optional(string, "10.43.0.10")
+    ntp_servers              = optional(list(string), ["time.cloudflare.com"])
+    extra_manifests = optional(list(string), [
+      "https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.9.0/deploy/standalone-install.yaml",
+      "https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.2/components.yaml",
+      "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml",
+    ])
   })
   validation {
     condition     = can(regex("^[a-zA-Z0-9]+$", var.talos.name)) && length(var.talos.name) >= 4
     error_message = "Cluster name must contain only alphanumeric characters and be at least 4 characters long."
+  }
+  validation {
+    condition     = can(cidrnetmask(var.talos.pod_subnet))
+    error_message = "talos.pod_subnet must be a valid CIDR (e.g. 10.42.0.0/16)."
+  }
+  validation {
+    condition     = can(cidrnetmask(var.talos.service_subnet))
+    error_message = "talos.service_subnet must be a valid CIDR (e.g. 10.43.0.0/16)."
+  }
+  validation {
+    condition = cidrhost(
+      "${var.talos.cluster_dns_ip}/${split("/", var.talos.service_subnet)[1]}",
+      0,
+    ) == cidrhost(var.talos.service_subnet, 0)
+    error_message = "talos.cluster_dns_ip must be inside talos.service_subnet."
+  }
+  validation {
+    condition = cidrhost(
+      "${var.talos.vip_ip}/${split("/", var.cilium_config.node_network)[1]}",
+      0,
+    ) == cidrhost(var.cilium_config.node_network, 0)
+    error_message = "talos.vip_ip must be inside cilium_config.node_network."
   }
 }
 
@@ -63,6 +94,13 @@ variable "controlplane_nodes" {
     condition     = length(var.controlplane_nodes) >= 1 && length(var.controlplane_nodes) % 2 == 1
     error_message = "Control plane requires an odd number of nodes (1, 3, or 5) for etcd quorum"
   }
+  validation {
+    condition = alltrue([
+      for v in var.controlplane_nodes :
+      cidrhost("${v.ip}/${split("/", var.cilium_config.node_network)[1]}", 0) == cidrhost(var.cilium_config.node_network, 0)
+    ])
+    error_message = "All controlplane_nodes IPs must be inside cilium_config.node_network."
+  }
 }
 
 variable "worker_nodes" {
@@ -71,13 +109,20 @@ variable "worker_nodes" {
     node         = string
     ip           = string
     cores        = optional(number, 2)
-    memory       = optional(number, 8092)
+    memory       = optional(number, 8192)
     datastore_id = optional(string, "local-lvm")
     storage_id   = string
     disk_size    = optional(number, 50)
     storage_size = optional(number, 200)
   }))
   default = {}
+  validation {
+    condition = alltrue([
+      for v in var.worker_nodes :
+      cidrhost("${v.ip}/${split("/", var.cilium_config.node_network)[1]}", 0) == cidrhost(var.cilium_config.node_network, 0)
+    ])
+    error_message = "All worker_nodes IPs must be inside cilium_config.node_network."
+  }
 }
 
 

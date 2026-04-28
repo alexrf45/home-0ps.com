@@ -4,6 +4,10 @@ kind: Service
 metadata:
   name: wallabag
   namespace: wallabag
+  labels:
+    app.kubernetes.io/name: wallabag
+    app.kubernetes.io/instance: wallabag-${ENVIRONMENT}
+    app.kubernetes.io/version: "${WALLABAG_VERSION}"
 spec:
   type: ClusterIP
   ports:
@@ -14,4 +18,3 @@ spec:
   selector:
     app: wallabag
     node: worker
-

@@ -26,17 +26,17 @@ spec:
           "platform": "github",
           "repositories": ["alexrf45/home-0ps.com"],
           "baseBranches": ["dev", "staging"],
-          "kubernetes": {"fileMatch": ["^apps/.+\\.yaml$"]},
+          "kubernetes": {"fileMatch": ["^_lib/applications/.+\\.yaml$"]},
           "flux": {"fileMatch": ["\\.yaml$"]},
           "includePaths": [
-            "clusters/**/.+\\.yaml$",
+            "_clusters/**/.+\\.yaml$",
             "_lib/.+\\.yaml$",
-            "_applications/.+\\.yaml$",
+            "global/.+\\.yaml$",
             "**/kustomization.yaml",
             "**/helmrelease.yaml",
             "**/deployment.yaml"
           ],
-           
+
           "ignorePaths": [
             "**/terraform/**",
             "**/*.tf",
@@ -45,10 +45,10 @@ spec:
             "**/.terraform/**",
             "**/terragrunt.hcl",
             "**/*.hcl",
-            "**/_archive",
-            "**/_hack",
-            "**/_flux_templates",
-            "**/_docs"
+            "**/_archive/**",
+            "**/_hack/**",
+            "**/_templates/**",
+            "**/_docs/**"
           ]
         }
       securityContext:

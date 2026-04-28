@@ -1,0 +1,35 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: freshrss-${ENVIRONMENT}-cluster
+  namespace: freshrss
+  labels:
+    app: "freshrss"
+    node: "worker"
+    env: "${ENVIRONMENT}"
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  postgresql:
+    pg_hba:
+      - hostssl freshrss freshrss 10.43.0.0/16 scram-sha-256
+    parameters:
+      "pgaudit.log": "all, -misc"
+      "pgaudit.log_catalog": "off"
+      "pgaudit.log_parameter": "on"
+      "pgaudit.log_relation": "on"
+  instances: 3
+  bootstrap:
+    initdb:
+      database: freshrss
+      owner: freshrss
+      secret:
+        name: freshrss-db-creds
+  superuserSecret:
+    name: freshrss-db-creds
+  storage:
+    size: 10Gi
+    storageClass: local-path
+  walStorage:
+    size: 5Gi
+    storageClass: local-path

@@ -40,6 +40,15 @@ variable "talos" {
     control_plane_extensions = list(string)
     worker_extensions        = list(string)
     platform                 = optional(string, "nocloud")
+    pod_subnet               = optional(string, "10.42.0.0/16")
+    service_subnet           = optional(string, "10.43.0.0/16")
+    cluster_dns_ip           = optional(string, "10.43.0.10")
+    ntp_servers              = optional(list(string), ["time.cloudflare.com"])
+    extra_manifests = optional(list(string), [
+      "https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.9.0/deploy/standalone-install.yaml",
+      "https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.2/components.yaml",
+      "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml",
+    ])
   })
   validation {
     condition     = can(regex("^[a-zA-Z0-9]+$", var.talos.name)) && length(var.talos.name) >= 4

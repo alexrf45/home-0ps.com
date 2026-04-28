@@ -53,12 +53,14 @@ data "talos_machine_configuration" "controlplane" {
               device_ownership_from_security_context = true
       time:
         servers:
-          - time.cloudflare.com
+%{for s in var.talos.ntp_servers~}
+          - ${s}
+%{endfor~}
       kubelet:
         extraArgs:
           rotate-server-certificates: true
         clusterDNS:
-          - 10.43.0.10
+          - ${var.talos.cluster_dns_ip}
         extraMounts:
           - destination: ${var.talos.storage_disk}
             type: bind
@@ -110,15 +112,15 @@ data "talos_machine_configuration" "controlplane" {
         cni:
           name: none
         podSubnets:
-          - 10.42.0.0/16
+          - ${var.talos.pod_subnet}
         serviceSubnets:
-          - 10.43.0.0/16
+          - ${var.talos.service_subnet}
       proxy:
         disabled: true
       extraManifests:
-        - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml
-        - https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-        - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml
+%{for m in var.talos.extra_manifests~}
+        - ${m}
+%{endfor~}
       inlineManifests:
         - name: namespace-flux
           contents: |
@@ -176,9 +178,9 @@ data "talos_machine_configuration" "worker" {
     cluster:
       network:
         podSubnets:
-          - 10.42.0.0/16
+          - ${var.talos.pod_subnet}
         serviceSubnets:
-          - 10.43.0.0/16
+          - ${var.talos.service_subnet}
     machine:
       systemDiskEncryption:
         ephemeral:
@@ -209,12 +211,14 @@ data "talos_machine_configuration" "worker" {
               device_ownership_from_security_context = true
       time:
         servers:
-          - time.cloudflare.com
+%{for s in var.talos.ntp_servers~}
+          - ${s}
+%{endfor~}
       kubelet:
         extraArgs:
           rotate-server-certificates: true
         clusterDNS:
-          - 10.43.0.10
+          - ${var.talos.cluster_dns_ip}
         extraMounts:
           - destination: ${var.talos.storage_disk}
             type: bind

@@ -26,7 +26,6 @@ root module (your infra/abydos/, infra/horus/, etc.)
 ├── terraform.tf          # Provider version constraints
 ├── variables.tf          # All variables including flux_config
 ├── outputs.tf            # Exposes module outputs
-├── bootstrap.sh          # Simplified: just terraform apply + kubeconfig merge
 └── talos-pve-v3.1.0/     # The module
     ├── terraform.tf      # Module provider requirements
     ├── variables.tf      # Module inputs

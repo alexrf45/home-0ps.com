@@ -4,6 +4,11 @@ kind: Deployment
 metadata:
   name: wallabag
   namespace: wallabag
+  labels:
+    app.kubernetes.io/name: wallabag
+    app.kubernetes.io/instance: wallabag-${ENVIRONMENT}
+    app.kubernetes.io/version: "${WALLABAG_VERSION}"
+    environment: "${ENVIRONMENT}"
 spec:
   replicas: 1
   selector:
@@ -15,20 +20,43 @@ spec:
         app: wallabag
         node: worker
         env: "${ENVIRONMENT}"
-      annotations:
+        app.kubernetes.io/name: wallabag
+        app.kubernetes.io/instance: wallabag-${ENVIRONMENT}
+        app.kubernetes.io/version: "${WALLABAG_VERSION}"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 33
+        runAsGroup: 33
+        fsGroup: 33
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: wallabag-web
         image: wallabag/wallabag:${WALLABAG_VERSION}
+        imagePullPolicy: Always
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 33
+          runAsGroup: 33
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - NET_BIND_SERVICE
+          seccompProfile:
+            type: RuntimeDefault
         resources:
-            requests:
-              memory: 128Mi
-              cpu: 100m
-            limits:
-              memory: 256Mi
-              cpu: 200m
+          requests:
+            memory: 256Mi
+            cpu: 100m
+          limits:
+            memory: 1Gi
+            cpu: 1000m
         ports:
-          - containerPort: 80
+        - containerPort: 80
         env:
         - name: SYMFONY__ENV__DATABASE_USER
           valueFrom:

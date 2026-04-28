@@ -62,7 +62,8 @@ spec:
           cp -a /var/www/wallabag/app/config/. /seed/config/
           [ -d /var/www/wallabag/var ] && cp -a /var/www/wallabag/var/. /seed/var/ || true
           [ -d /var/www/wallabag/web/assets/images ] && cp -a /var/www/wallabag/web/assets/images/. /seed/images/ || true
-          chown -R 33:33 /seed/config /seed/var /seed/images
+          cp -a /etc/php81/conf.d/. /seed/php-conf/
+          chown -R 33:33 /seed/config /seed/var /seed/images /seed/php-conf
         resources:
           requests:
             memory: 64Mi
@@ -77,6 +78,8 @@ spec:
           mountPath: /seed/var
         - name: wallabag-images
           mountPath: /seed/images
+        - name: wallabag-php-conf
+          mountPath: /seed/php-conf
       containers:
       - name: wallabag-web
         image: wallabag/wallabag:${WALLABAG_VERSION}
@@ -110,6 +113,8 @@ spec:
           mountPath: /var/www/wallabag/var
         - name: wallabag-images
           mountPath: /var/www/wallabag/web/assets/images
+        - name: wallabag-php-conf
+          mountPath: /etc/php81/conf.d
         env:
         - name: SYMFONY__ENV__DATABASE_USER
           valueFrom:
@@ -170,4 +175,6 @@ spec:
       - name: wallabag-var
         emptyDir: {}
       - name: wallabag-images
+        emptyDir: {}
+      - name: wallabag-php-conf
         emptyDir: {}

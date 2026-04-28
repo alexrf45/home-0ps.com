@@ -23,9 +23,9 @@ spec:
               operations:
                 - CREATE
                 - UPDATE
-            namespaceSelector:
-              matchLabels:
-                home-0ps.com/policy-target: "application"
+              namespaceSelector:
+                matchLabels:
+                  home-0ps.com/policy-target: "application"
       validate:
         message: "Privileged containers are not allowed"
         pattern:
@@ -58,9 +58,9 @@ spec:
               operations:
                 - CREATE
                 - UPDATE
-            namespaceSelector:
-              matchLabels:
-                home-0ps.com/policy-target: "application"
+              namespaceSelector:
+                matchLabels:
+                  home-0ps.com/policy-target: "application"
       validate:
         message: "Containers must run as non-root user"
         pattern:
@@ -94,9 +94,9 @@ spec:
               operations:
                 - CREATE
                 - UPDATE
-            namespaceSelector:
-              matchLabels:
-                home-0ps.com/policy-target: "application"
+              namespaceSelector:
+                matchLabels:
+                  home-0ps.com/policy-target: "application"
       validate:
         message: "Sharing the host namespaces is not allowed"
         pattern:
@@ -127,9 +127,9 @@ spec:
               operations:
                 - CREATE
                 - UPDATE
-            namespaceSelector:
-              matchLabels:
-                home-0ps.com/policy-target: "application"
+              namespaceSelector:
+                matchLabels:
+                  home-0ps.com/policy-target: "application"
       validate:
         message: "Resource requests and limits are required"
         pattern:
@@ -166,9 +166,9 @@ spec:
               operations:
                 - CREATE
                 - UPDATE
-            namespaceSelector:
-              matchLabels:
-                home-0ps.com/policy-target: "application"
+              namespaceSelector:
+                matchLabels:
+                  home-0ps.com/policy-target: "application"
       validate:
         message: "imagePullPolicy must be Always"
         pattern:
@@ -199,9 +199,9 @@ spec:
               operations:
                 - CREATE
                 - UPDATE
-            namespaceSelector:
-              matchLabels:
-                home-0ps.com/policy-target: "application"
+              namespaceSelector:
+                matchLabels:
+                  home-0ps.com/policy-target: "application"
       validate:
         message: "Using a mutable image tag e.g. 'latest' is not allowed"
         pattern:
@@ -236,9 +236,9 @@ spec:
               operations:
                 - CREATE
                 - UPDATE
-            namespaceSelector:
-              matchLabels:
-                home-0ps.com/policy-target: "application"
+              namespaceSelector:
+                matchLabels:
+                  home-0ps.com/policy-target: "application"
       validate:
         message: "Required labels missing: app.kubernetes.io/name and app.kubernetes.io/version"
         pattern:
@@ -269,9 +269,9 @@ spec:
               operations:
                 - CREATE
                 - UPDATE
-            namespaceSelector:
-              matchLabels:
-                home-0ps.com/policy-target: "application"
+              namespaceSelector:
+                matchLabels:
+                  home-0ps.com/policy-target: "application"
       validate:
         message: "Only approved ingress classes are allowed"
         pattern:
@@ -301,9 +301,9 @@ spec:
               operations:
                 - CREATE
                 - UPDATE
-            namespaceSelector:
-              matchLabels:
-                home-0ps.com/policy-target: "application"
+              namespaceSelector:
+                matchLabels:
+                  home-0ps.com/policy-target: "application"
       validate:
         message: "Required labels missing: app.kubernetes.io/name, app.kubernetes.io/instance, environment"
         pattern:
@@ -367,9 +367,9 @@ spec:
           - resources:
               kinds:
                 - Pod
-            namespaceSelector:
-              matchLabels:
-                home-0ps.com/policy-target: "application"
+              namespaceSelector:
+                matchLabels:
+                  home-0ps.com/policy-target: "application"
       mutate:
         patchStrategicMerge:
           spec:

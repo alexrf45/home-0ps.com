@@ -23,9 +23,10 @@ spec:
       retries: -1
   targetNamespace: cert-manager
   values:
+    # CRDs are installed via global/crds/trust-manager/ — see CLAUDE.md "CRDs" rule.
     crds:
-      enabled: true
-      keep: true
+      enabled: false
+      keep: false
     nodeSelector:
       node: "worker"
     resources:

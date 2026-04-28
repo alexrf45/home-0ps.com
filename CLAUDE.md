@@ -86,6 +86,8 @@ Runnable slash commands live in `.claude/commands/`:
 
 **Secrets (SOPS):** Never modify or re-encrypt `.env` files, SOPS-encrypted files, or secrets without explicit user confirmation. The user manages secrets themselves. SOPS config is at `_clusters/dev/.sops.yaml` — files matching `*values.yaml` are fully encrypted; other YAML files encrypt only `data` and `stringData` fields.
 
+**CRDs:** Any operator whose Custom Resources are reconciled by Flux must opt out of installing its own CRDs (set `crds.enabled: false` / `crds.create: false` / `installCRDs: false` on the HelmRelease, depending on the chart's flag). CRDs live in `global/crds/<operator>/` and are reconciled in the `crds` Flux Kustomization (Layer 2 of `_clusters/dev/cluster.yaml`, before `controllers`). Pin the CRD version to the operator chart version in `_lib/controllers/<operator>/`. Prefer upstream CRD-only Helm subcharts (e.g. `prometheus-operator-crds`) over raw YAML when available — they get Renovate updates for free. This pattern eliminates the kustomize-controller dry-run race that hits when a CR and its CRD-installing chart share a Flux Kustomization.
+
 **Talos upgrades:** See `_hack/scripts/upgrade.sh` for the system-upgrade-controller approach.
 
 ## Architecture

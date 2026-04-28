@@ -25,12 +25,58 @@ spec:
         app.kubernetes.io/version: "${WALLABAG_VERSION}"
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 33
-        runAsGroup: 33
         fsGroup: 33
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+      # The wallabag/wallabag image expects to run as root: its entrypoint
+      # writes app/config/parameters.yml, and Symfony writes cache/logs/
+      # sessions under var/ plus uploaded entry images under
+      # web/assets/images/. Those paths are root-owned in the image.
+      #
+      # This init container (root) seeds three emptyDirs with the image's
+      # original content and chowns them to UID 33 so the main container
+      # can run as non-root and still write where it needs to.
+      - name: seed-writable-dirs
+        image: wallabag/wallabag:${WALLABAG_VERSION}
+        imagePullPolicy: Always
+        securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - CHOWN
+            - DAC_OVERRIDE
+            - FOWNER
+          seccompProfile:
+            type: RuntimeDefault
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -eu
+          cp -a /var/www/wallabag/app/config/. /seed/config/
+          [ -d /var/www/wallabag/var ] && cp -a /var/www/wallabag/var/. /seed/var/ || true
+          [ -d /var/www/wallabag/web/assets/images ] && cp -a /var/www/wallabag/web/assets/images/. /seed/images/ || true
+          chown -R 33:33 /seed/config /seed/var /seed/images
+        resources:
+          requests:
+            memory: 64Mi
+            cpu: 50m
+          limits:
+            memory: 256Mi
+            cpu: 500m
+        volumeMounts:
+        - name: wallabag-config
+          mountPath: /seed/config
+        - name: wallabag-var
+          mountPath: /seed/var
+        - name: wallabag-images
+          mountPath: /seed/images
       containers:
       - name: wallabag-web
         image: wallabag/wallabag:${WALLABAG_VERSION}
@@ -57,6 +103,13 @@ spec:
             cpu: 1000m
         ports:
         - containerPort: 80
+        volumeMounts:
+        - name: wallabag-config
+          mountPath: /var/www/wallabag/app/config
+        - name: wallabag-var
+          mountPath: /var/www/wallabag/var
+        - name: wallabag-images
+          mountPath: /var/www/wallabag/web/assets/images
         env:
         - name: SYMFONY__ENV__DATABASE_USER
           valueFrom:
@@ -111,3 +164,10 @@ spec:
             secretKeyRef:
               name: wallabag-creds
               key: redis_password
+      volumes:
+      - name: wallabag-config
+        emptyDir: {}
+      - name: wallabag-var
+        emptyDir: {}
+      - name: wallabag-images
+        emptyDir: {}

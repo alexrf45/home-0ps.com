@@ -35,10 +35,11 @@ spec:
       # parameters.yml, var/cache, var/logs, var/sessions, and web/assets/
       # images directly — no shadow mounts needed.
       #
-      # The one path the image leaves root-owned is /etc/php81/conf.d/,
-      # where the entrypoint templates 50_wallabag.ini from PHP_MEMORY_LIMIT.
-      # This init container (root) copies that directory into an emptyDir
-      # and chowns it to 65534 so the main container can write 50_wallabag.ini.
+      # Paths the image leaves root-owned that the entrypoint writes at
+      # startup: /etc/php81/conf.d/ (50_wallabag.ini from PHP_MEMORY_LIMIT),
+      # /etc/s6/ (s6-svscan lockfile), /var/lib/nginx/ (nginx logs + tmp).
+      # This init container (root) seeds each into an emptyDir and chowns
+      # to 65534 so the main container can write them without privilege.
       - name: seed-writable-dirs
         image: wallabag/wallabag:${WALLABAG_VERSION}
         imagePullPolicy: Always
@@ -63,7 +64,8 @@ spec:
           set -eu
           cp -a /etc/php81/conf.d/. /seed/php-conf/
           cp -a /etc/s6/. /seed/s6/
-          chown -R 65534:65534 /seed/php-conf /seed/s6
+          cp -a /var/lib/nginx/. /seed/nginx-lib/
+          chown -R 65534:65534 /seed/php-conf /seed/s6 /seed/nginx-lib
         resources:
           requests:
             memory: 32Mi
@@ -76,6 +78,8 @@ spec:
           mountPath: /seed/php-conf
         - name: wallabag-s6
           mountPath: /seed/s6
+        - name: wallabag-nginx-lib
+          mountPath: /seed/nginx-lib
       containers:
       - name: wallabag-web
         image: wallabag/wallabag:${WALLABAG_VERSION}
@@ -115,6 +119,8 @@ spec:
           mountPath: /etc/php81/conf.d
         - name: wallabag-s6
           mountPath: /etc/s6
+        - name: wallabag-nginx-lib
+          mountPath: /var/lib/nginx
         - name: wallabag-shims
           mountPath: /opt/shims
           readOnly: true
@@ -178,6 +184,8 @@ spec:
       - name: wallabag-php-conf
         emptyDir: {}
       - name: wallabag-s6
+        emptyDir: {}
+      - name: wallabag-nginx-lib
         emptyDir: {}
       - name: wallabag-shims
         configMap:

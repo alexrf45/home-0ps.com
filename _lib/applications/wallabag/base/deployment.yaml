@@ -39,7 +39,7 @@ spec:
       # where the entrypoint templates 50_wallabag.ini from PHP_MEMORY_LIMIT.
       # This init container (root) copies that directory into an emptyDir
       # and chowns it to 65534 so the main container can write 50_wallabag.ini.
-      - name: seed-php-conf
+      - name: seed-writable-dirs
         image: wallabag/wallabag:${WALLABAG_VERSION}
         imagePullPolicy: Always
         securityContext:
@@ -62,7 +62,8 @@ spec:
         - |
           set -eu
           cp -a /etc/php81/conf.d/. /seed/php-conf/
-          chown -R 65534:65534 /seed/php-conf
+          cp -a /etc/s6/. /seed/s6/
+          chown -R 65534:65534 /seed/php-conf /seed/s6
         resources:
           requests:
             memory: 32Mi
@@ -73,6 +74,8 @@ spec:
         volumeMounts:
         - name: wallabag-php-conf
           mountPath: /seed/php-conf
+        - name: wallabag-s6
+          mountPath: /seed/s6
       containers:
       - name: wallabag-web
         image: wallabag/wallabag:${WALLABAG_VERSION}
@@ -110,6 +113,8 @@ spec:
         volumeMounts:
         - name: wallabag-php-conf
           mountPath: /etc/php81/conf.d
+        - name: wallabag-s6
+          mountPath: /etc/s6
         - name: wallabag-shims
           mountPath: /opt/shims
           readOnly: true
@@ -171,6 +176,8 @@ spec:
               key: redis_password
       volumes:
       - name: wallabag-php-conf
+        emptyDir: {}
+      - name: wallabag-s6
         emptyDir: {}
       - name: wallabag-shims
         configMap:

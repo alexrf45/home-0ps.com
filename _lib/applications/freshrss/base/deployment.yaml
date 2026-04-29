@@ -52,7 +52,7 @@ spec:
               type: RuntimeDefault
           env:
             - name: TZ
-              value: America/Los_Angeles
+              value: America/New_York
             - name: CRON_MIN
               value: "*/20"
             - name: FRESHRSS_INSTALL
@@ -145,7 +145,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: freshrss-data
+            claimName: ${FRESHRSS_PVC_NAME}
         - name: extensions
           emptyDir: {}
         - name: tmp

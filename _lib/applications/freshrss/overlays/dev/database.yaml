@@ -9,7 +9,7 @@ metadata:
     node: "worker"
     env: "${ENVIRONMENT}"
 spec:
-  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.4-6@sha256:4ebb83ad6701cf90cd16f4c0b502676238ffdb1169bf27c5ae60e9a5bdc7b925
   postgresql:
     pg_hba:
       - hostssl freshrss freshrss 10.43.0.0/16 scram-sha-256
@@ -28,8 +28,8 @@ spec:
   superuserSecret:
     name: freshrss-db-creds
   storage:
-    size: 10Gi
-    storageClass: local-path
-  walStorage:
     size: 5Gi
-    storageClass: local-path
+    storageClass: iscsi
+  walStorage:
+    size: 2Gi
+    storageClass: iscsi

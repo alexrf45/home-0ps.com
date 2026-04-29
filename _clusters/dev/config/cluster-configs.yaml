@@ -24,6 +24,7 @@ data:
   WALLABAG_SUBDOMAIN: "dev.int.wallabag"
   FRESHRSS_VERSION: "1.27.0-alpine"
   FRESHRSS_SUBDOMAIN: "dev.int.freshrss"
+  FRESHRSS_PVC_NAME: "dev-freshrss-pvc"
   OBSIDIAN_LIVESYNC_VERSION: "3.4.2"
   OBSIDIAN_LIVESYNC_SUBDOMAIN: "dev.int.livesync"
 ---

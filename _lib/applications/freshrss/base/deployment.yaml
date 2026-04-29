@@ -34,6 +34,8 @@ spec:
           image: freshrss/freshrss:${FRESHRSS_VERSION}
           imagePullPolicy: Always
           securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
             seccompProfile:

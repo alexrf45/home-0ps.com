@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - secrets.yaml
+  - init-script-configmap.yaml
   - deployment.yaml
   - service.yaml
   - httproute.yaml

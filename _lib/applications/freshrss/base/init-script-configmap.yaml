@@ -1,0 +1,53 @@
+---
+# FreshRSS install/user bootstrap script.
+#
+# The upstream Docker/entrypoint.sh handles install + user creation by reading
+# FRESHRSS_INSTALL / FRESHRSS_USER and running them through `eval "echo \"$VAR\""`
+# before word-splitting into argv. That second eval re-interprets any `$` or
+# backtick that ended up in a secret value (passwords commonly contain them),
+# silently consuming tokens and shifting positional flags — which is why
+# `--default-user $ADMIN_USER` would come up empty even though the env var
+# itself was populated correctly.
+#
+# This script bypasses that path entirely: it invokes cli/do-install.php and
+# cli/create-user.php directly with quoted argv, then exec's the upstream
+# entrypoint with FRESHRSS_INSTALL/FRESHRSS_USER unset so those branches are
+# skipped. Exit code 3 from either CLI means "already installed/created" and
+# is treated as success.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: freshrss-init-script
+  namespace: freshrss
+  labels:
+    app.kubernetes.io/name: freshrss
+    app.kubernetes.io/instance: freshrss-${ENVIRONMENT}
+data:
+  bootstrap.sh: |
+    #!/bin/sh
+    set -eu
+    cd /var/www/FreshRSS
+
+    php -f ./cli/do-install.php -- \
+      --api-enabled \
+      --base-url "https://${FRESHRSS_SUBDOMAIN}.home-0ps.com" \
+      --db-type pgsql \
+      --db-host "$DB_HOST" \
+      --db-base "$DB_BASE" \
+      --db-user "$DB_USER" \
+      --db-password "$DB_PASSWORD" \
+      --db-prefix freshrss_ \
+      --default-user "$ADMIN_USER" \
+      --auth-type form \
+      || [ $? -eq 3 ]
+
+    php -f ./cli/create-user.php -- \
+      --user "$ADMIN_USER" \
+      --password "$ADMIN_PASSWORD" \
+      --api-password "$ADMIN_PASSWORD" \
+      --email "$ADMIN_EMAIL" \
+      --language en \
+      || [ $? -eq 3 ]
+
+    unset FRESHRSS_INSTALL FRESHRSS_USER
+    exec ./Docker/entrypoint.sh "$@"

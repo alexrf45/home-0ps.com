@@ -65,10 +65,6 @@ spec:
               chown -R 100:82 /seed/php84 /seed/docker
               chown -R 100:82 /var/www/FreshRSS/data
               chmod -R g+rX,g+w /var/www/FreshRSS/data
-              # Remove lines that write /etc/localtime and /etc/timezone — those
-              # require root and fail as apache(100). TZ env var + the php.ini
-              # date.timezone sed (which runs against the seeded /etc/php84/ emptyDir)
-              # handles timezone correctly without touching /etc/.
               sed -i -e '/\/etc\/localtime/d' -e '/\/etc\/timezone/d' /seed/docker/entrypoint.sh
           resources:
             requests:
@@ -101,23 +97,12 @@ spec:
                 - NET_BIND_SERVICE
             seccompProfile:
               type: RuntimeDefault
-          # The image entrypoint expands FRESHRSS_INSTALL via
-          # `eval "echo \"$FRESHRSS_INSTALL\""`, which proved unreliable for
-          # secret-sourced vars under Flux + Kubernetes substitution. Build
-          # the install/user arg strings here in shell where the secret env
-          # vars unconditionally expand, then exec the original entrypoint
-          # with pre-baked literal values. CRON_MIN is left empty because
-          # `crontab -` needs SUID, which allowPrivilegeEscalation:false
-          # blocks; feed refresh should be driven by a separate CronJob.
           command:
             - /bin/sh
-            - -c
-            - |
-              set -eu
-              export FRESHRSS_INSTALL="--api-enabled --base-url https://${FRESHRSS_SUBDOMAIN}.home-0ps.com --db-type pgsql --db-host $${DB_HOST} --db-base $${DB_BASE} --db-user $${DB_USER} --db-password $${DB_PASSWORD} --db-prefix freshrss_ --default-user $${ADMIN_USER} --auth-type form"
-              export FRESHRSS_USER="--user $${ADMIN_USER} --password $${ADMIN_PASSWORD} --api-password $${ADMIN_PASSWORD} --email $${ADMIN_EMAIL} --language en"
-              cd /var/www/FreshRSS
-              exec ./Docker/entrypoint.sh httpd -D FOREGROUND
+            - /opt/freshrss-init/bootstrap.sh
+            - httpd
+            - -D
+            - FOREGROUND
           env:
             - name: TZ
               value: America/New_York
@@ -180,6 +165,9 @@ spec:
               mountPath: /tmp
             - name: run
               mountPath: /run
+            - name: freshrss-init-script
+              mountPath: /opt/freshrss-init
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /i/?c=index&a=index
@@ -207,3 +195,10 @@ spec:
           emptyDir: {}
         - name: run
           emptyDir: {}
+        - name: freshrss-init-script
+          configMap:
+            name: freshrss-init-script
+            defaultMode: 0755
+            items:
+              - key: bootstrap.sh
+                path: bootstrap.sh

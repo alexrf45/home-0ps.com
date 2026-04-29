@@ -146,19 +146,19 @@ spec:
                 --api-enabled
                 --base-url https://${FRESHRSS_SUBDOMAIN}.home-0ps.com
                 --db-type pgsql
-                --db-host $DB_HOST
-                --db-base $DB_BASE
-                --db-user $DB_USER
-                --db-password $DB_PASSWORD
+                --db-host $$DB_HOST
+                --db-base $$DB_BASE
+                --db-user $$DB_USER
+                --db-password $$DB_PASSWORD
                 --db-prefix freshrss_
-                --default-user $ADMIN_USER
+                --default-user $$ADMIN_USER
                 --auth-type form
             - name: FRESHRSS_USER
               value: |-
-                --user $ADMIN_USER
-                --password $ADMIN_PASSWORD
-                --api-password $ADMIN_PASSWORD
-                --email $ADMIN_EMAIL
+                --user $$ADMIN_USER
+                --password $$ADMIN_PASSWORD
+                --api-password $$ADMIN_PASSWORD
+                --email $$ADMIN_EMAIL
                 --language en
           ports:
             - name: http

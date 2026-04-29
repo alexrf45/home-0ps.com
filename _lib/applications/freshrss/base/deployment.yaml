@@ -27,17 +27,73 @@ spec:
         app.kubernetes.io/version: "${FRESHRSS_VERSION}"
     spec:
       securityContext:
+        # apache user (100) is a member of www-data (82); fsGroup ensures
+        # emptyDirs and the data PVC are group-accessible on mount.
+        fsGroup: 82
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+        # The FreshRSS Alpine entrypoint runs as root to modify /etc/php84/php.ini
+        # and write Docker/env.txt. Since apache (UID 100) can't write those
+        # root-owned paths, this init container (root with CHOWN/DAC_OVERRIDE/FOWNER)
+        # seeds both into emptyDirs owned by apache:www-data (100:82), and
+        # pre-chowns the persistent data volume so the main container can write it.
+        - name: seed-writable-dirs
+          image: freshrss/freshrss:${FRESHRSS_VERSION}
+          imagePullPolicy: Always
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CHOWN
+                - DAC_OVERRIDE
+                - FOWNER
+            seccompProfile:
+              type: RuntimeDefault
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              cp -a /etc/php84/. /seed/php84/
+              cp -a /var/www/FreshRSS/Docker/. /seed/docker/
+              chown -R 100:82 /seed/php84 /seed/docker
+              chown -R 100:82 /var/www/FreshRSS/data
+              chmod -R g+rX,g+w /var/www/FreshRSS/data
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 50m
+            limits:
+              memory: 128Mi
+              cpu: 500m
+          volumeMounts:
+            - name: freshrss-php84
+              mountPath: /seed/php84
+            - name: freshrss-docker
+              mountPath: /seed/docker
+            - name: data
+              mountPath: /var/www/FreshRSS/data
       containers:
         - name: freshrss
           image: freshrss/freshrss:${FRESHRSS_VERSION}
           imagePullPolicy: Always
           securityContext:
-            runAsNonRoot: false
-            runAsUser: 0
+            runAsNonRoot: true
+            runAsUser: 100
+            runAsGroup: 82
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
             seccompProfile:
               type: RuntimeDefault
           env:
@@ -111,6 +167,10 @@ spec:
               memory: 512Mi
               cpu: 500m
           volumeMounts:
+            - name: freshrss-php84
+              mountPath: /etc/php84
+            - name: freshrss-docker
+              mountPath: /var/www/FreshRSS/Docker
             - name: data
               mountPath: /var/www/FreshRSS/data
             - name: extensions
@@ -133,6 +193,10 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
       volumes:
+        - name: freshrss-php84
+          emptyDir: {}
+        - name: freshrss-docker
+          emptyDir: {}
         - name: data
           persistentVolumeClaim:
             claimName: ${FRESHRSS_PVC_NAME}

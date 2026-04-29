@@ -65,6 +65,11 @@ spec:
               chown -R 100:82 /seed/php84 /seed/docker
               chown -R 100:82 /var/www/FreshRSS/data
               chmod -R g+rX,g+w /var/www/FreshRSS/data
+              # Remove lines that write /etc/localtime and /etc/timezone — those
+              # require root and fail as apache(100). TZ env var + the php.ini
+              # date.timezone sed (which runs against the seeded /etc/php84/ emptyDir)
+              # handles timezone correctly without touching /etc/.
+              sed -i -e '/\/etc\/localtime/d' -e '/\/etc\/timezone/d' /seed/docker/entrypoint.sh
           resources:
             requests:
               memory: 32Mi
@@ -141,19 +146,19 @@ spec:
                 --api-enabled
                 --base-url https://${FRESHRSS_SUBDOMAIN}.home-0ps.com
                 --db-type pgsql
-                --db-host $(DB_HOST)
-                --db-base $(DB_BASE)
-                --db-user $(DB_USER)
-                --db-password $(DB_PASSWORD)
+                --db-host $DB_HOST
+                --db-base $DB_BASE
+                --db-user $DB_USER
+                --db-password $DB_PASSWORD
                 --db-prefix freshrss_
-                --default-user $(ADMIN_USER)
+                --default-user $ADMIN_USER
                 --auth-type form
             - name: FRESHRSS_USER
               value: |-
-                --user $(ADMIN_USER)
-                --password $(ADMIN_PASSWORD)
-                --api-password $(ADMIN_PASSWORD)
-                --email $(ADMIN_EMAIL)
+                --user $ADMIN_USER
+                --password $ADMIN_PASSWORD
+                --api-password $ADMIN_PASSWORD
+                --email $ADMIN_EMAIL
                 --language en
           ports:
             - name: http

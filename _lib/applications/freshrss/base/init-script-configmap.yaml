@@ -57,5 +57,10 @@ data:
       --language en \
       || [ $? -eq 3 ]
 
+    # Apache on Alpine writes its pidfile to /run/apache2/. The image
+    # creates that directory at build time, but our emptyDir mount on /run
+    # wipes it. Recreate it here as UID 100 (apache) so httpd can start.
+    mkdir -p /run/apache2
+
     unset FRESHRSS_INSTALL FRESHRSS_USER
     exec ./Docker/entrypoint.sh "$@"

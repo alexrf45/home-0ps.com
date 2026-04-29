@@ -38,8 +38,7 @@ data:
       --db-password "$DB_PASSWORD" \
       --db-prefix freshrss_ \
       --default-user "$ADMIN_USER" \
-      --auth-type form \
-      || [ $? -eq 3 ]
+      --auth-type form || [ $? -eq 3 ]
 
     php -f ./cli/create-user.php -- \
       --user "$ADMIN_USER" \

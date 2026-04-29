@@ -14,6 +14,15 @@
 # entrypoint with FRESHRSS_INSTALL/FRESHRSS_USER unset so those branches are
 # skipped. Exit code 3 from either CLI means "already installed/created" and
 # is treated as success.
+#
+# IMPORTANT: --db-prefix is declared as optional-value in do-install.php,
+# which maps to PHP getopt's `::` notation. PHP getopt requires
+# `--name=value` (with equals) for optional-value long options, AND it
+# stops parsing at the first non-option token (anything not starting with
+# `-`). Writing `--db-prefix freshrss_` makes getopt take --db-prefix with
+# no value, then halt on `freshrss_`, silently dropping every flag that
+# follows — including --default-user, which was the canary symptom.
+# All optional-value flags must use --flag=value below.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -36,7 +45,7 @@ data:
       --db-base "$DB_BASE" \
       --db-user "$DB_USER" \
       --db-password "$DB_PASSWORD" \
-      --db-prefix freshrss_ \
+      --db-prefix=freshrss_ \
       --default-user "$ADMIN_USER" \
       --auth-type form || [ $? -eq 3 ]
 

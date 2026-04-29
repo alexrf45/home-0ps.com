@@ -27,10 +27,6 @@ spec:
         app.kubernetes.io/version: "${FRESHRSS_VERSION}"
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 65534
-        runAsGroup: 65534
-        fsGroup: 65534
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -38,16 +34,8 @@ spec:
           image: freshrss/freshrss:${FRESHRSS_VERSION}
           imagePullPolicy: Always
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 65534
-            runAsGroup: 65534
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - NET_BIND_SERVICE
             seccompProfile:
               type: RuntimeDefault
           env:
@@ -55,25 +43,6 @@ spec:
               value: America/New_York
             - name: CRON_MIN
               value: "*/20"
-            - name: FRESHRSS_INSTALL
-              value: |-
-                --api-enabled
-                --base-url https://${FRESHRSS_SUBDOMAIN}.home-0ps.com
-                --db-type pgsql
-                --db-host $(DB_HOST)
-                --db-base $(DB_BASE)
-                --db-user $(DB_USER)
-                --db-password $(DB_PASSWORD)
-                --db-prefix freshrss_
-                --default-user $(ADMIN_USER)
-                --auth-type form
-            - name: FRESHRSS_USER
-              value: |-
-                --user $(ADMIN_USER)
-                --password $(ADMIN_PASSWORD)
-                --api-password $(ADMIN_PASSWORD)
-                --email $(ADMIN_EMAIL)
-                --language en
             - name: DB_HOST
               valueFrom:
                 secretKeyRef:
@@ -109,6 +78,25 @@ spec:
                 secretKeyRef:
                   name: freshrss-admin
                   key: admin_email
+            - name: FRESHRSS_INSTALL
+              value: |-
+                --api-enabled
+                --base-url https://${FRESHRSS_SUBDOMAIN}.home-0ps.com
+                --db-type pgsql
+                --db-host $(DB_HOST)
+                --db-base $(DB_BASE)
+                --db-user $(DB_USER)
+                --db-password $(DB_PASSWORD)
+                --db-prefix freshrss_
+                --default-user $(ADMIN_USER)
+                --auth-type form
+            - name: FRESHRSS_USER
+              value: |-
+                --user $(ADMIN_USER)
+                --password $(ADMIN_PASSWORD)
+                --api-password $(ADMIN_PASSWORD)
+                --email $(ADMIN_EMAIL)
+                --language en
           ports:
             - name: http
               containerPort: 80

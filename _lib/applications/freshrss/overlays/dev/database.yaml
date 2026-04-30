@@ -22,7 +22,7 @@ spec:
   bootstrap:
     initdb:
       database: freshrss
-      owner: postgres
+      owner: freshrss
       secret:
         name: freshrss-db-creds
   superuserSecret:

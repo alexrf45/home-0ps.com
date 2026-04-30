@@ -129,17 +129,17 @@ spec:
             - name: ADMIN_USER
               valueFrom:
                 secretKeyRef:
-                  name: freshrss-admin
+                  name: freshrss-db-creds
                   key: admin_user
             - name: ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: freshrss-admin
+                  name: freshrss-db-creds
                   key: admin_password
             - name: ADMIN_EMAIL
               valueFrom:
                 secretKeyRef:
-                  name: freshrss-admin
+                  name: freshrss-db-creds
                   key: admin_email
           ports:
             - name: http

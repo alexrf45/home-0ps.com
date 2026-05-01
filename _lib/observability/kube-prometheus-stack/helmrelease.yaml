@@ -1,0 +1,152 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: flux-system
+spec:
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      version: "78.0.0"
+  interval: 30m
+  install:
+    crds: Skip
+    remediation:
+      retries: -1
+  upgrade:
+    crds: Skip
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: -1
+  targetNamespace: monitoring
+  values:
+    crds:
+      enabled: false
+
+    fullnameOverride: kps
+
+    defaultRules:
+      create: true
+
+    alertmanager:
+      alertmanagerSpec:
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: freenas-iscsi
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 5Gi
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100Mi
+          limits:
+            memory: 200Mi
+
+    prometheus:
+      prometheusSpec:
+        retention: 15d
+        retentionSize: 45GB
+        scrapeInterval: 30s
+        evaluationInterval: 30s
+        # Pick up every ServiceMonitor / PodMonitor / Probe / Rule / ScrapeConfig
+        # cluster-wide, regardless of label. Required so Hubble, Falco, and
+        # cert-manager monitors are scraped without us having to label them.
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
+        probeSelectorNilUsesHelmValues: false
+        ruleSelectorNilUsesHelmValues: false
+        scrapeConfigSelectorNilUsesHelmValues: false
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: freenas-iscsi
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 50Gi
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1Gi
+          limits:
+            memory: 2Gi
+
+    grafana:
+      enabled: true
+      defaultDashboardsEnabled: true
+      admin:
+        existingSecret: grafana-admin-credentials
+        userKey: admin-user
+        passwordKey: admin-password
+      persistence:
+        enabled: true
+        type: pvc
+        storageClassName: freenas-iscsi
+        accessModes: ["ReadWriteOnce"]
+        size: 5Gi
+      serviceMonitor:
+        enabled: true
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          memory: 256Mi
+
+    # Talos hides controller-manager / scheduler / etcd from the default
+    # endpoints used by kube-prometheus-stack, and Cilium replaces kube-proxy.
+    # Re-enable these once node IPs are wired in (or expose via Talos config).
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeEtcd:
+      enabled: false
+    kubeProxy:
+      enabled: false
+
+    kubeApiServer:
+      enabled: true
+    kubelet:
+      enabled: true
+
+    nodeExporter:
+      enabled: true
+    prometheus-node-exporter:
+      resources:
+        requests:
+          cpu: 20m
+          memory: 30Mi
+        limits:
+          memory: 60Mi
+
+    kube-state-metrics:
+      resources:
+        requests:
+          cpu: 20m
+          memory: 50Mi
+        limits:
+          memory: 100Mi
+
+    prometheusOperator:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 100Mi
+        limits:
+          memory: 200Mi
+      admissionWebhooks:
+        patch:
+          resources:
+            requests:
+              cpu: 20m
+              memory: 30Mi

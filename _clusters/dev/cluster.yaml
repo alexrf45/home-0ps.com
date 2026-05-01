@@ -220,6 +220,35 @@ spec:
       - kind: ConfigMap
         name: cluster-config
 ---
+# Layer 5c: Observability (kube-prometheus-stack; Alloy/Tempo added in later passes)
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: observability
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: storage
+    - name: secrets
+    - name: networking
+  interval: 10m
+  retryInterval: 1m
+  timeout: 15m
+  path: ./_lib/observability
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-config
+---
 # Layer 6: Security policies (parallel to infrastructure)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

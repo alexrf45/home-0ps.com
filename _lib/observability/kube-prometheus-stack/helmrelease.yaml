@@ -68,7 +68,7 @@ spec:
         storageSpec:
           volumeClaimTemplate:
             spec:
-              storageClassName: freenas-iscsi
+              storageClassName: iscsi
               accessModes: ["ReadWriteOnce"]
               resources:
                 requests:
@@ -90,7 +90,7 @@ spec:
       persistence:
         enabled: true
         type: pvc
-        storageClassName: freenas-iscsi
+        storageClassName: iscsi
         accessModes: ["ReadWriteOnce"]
         size: 5Gi
       serviceMonitor:

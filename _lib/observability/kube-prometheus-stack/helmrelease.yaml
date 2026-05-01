@@ -39,7 +39,7 @@ spec:
         storage:
           volumeClaimTemplate:
             spec:
-              storageClassName: freenas-iscsi
+              storageClassName: iscsi
               accessModes: ["ReadWriteOnce"]
               resources:
                 requests:

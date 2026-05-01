@@ -37,6 +37,26 @@ data:
     set -eu
     cd /var/www/FreshRSS
 
+    # Force-reinstall escape hatch. do-install.php exits 3 if
+    # data/applied_migrations.txt exists, regardless of whether config.php
+    # is actually present. After a credential rotation or PVC reuse, that
+    # marker can outlive a hand-cleaned data dir and silently block
+    # bootstrap from regenerating config.php — leaving FreshRSS booting
+    # against stale settings or missing per-user dirs.
+    #
+    # Set FRESHRSS_FORCE_REINSTALL=true on the deployment, restart the
+    # pod, then unset it once you confirm a healthy install. The DB
+    # schema must be cleaned separately (this container has no psql) —
+    # exec into the CNPG primary and DROP the freshrss_* tables before
+    # flipping this flag, or do-install.php will fail on CREATE TABLE.
+    case "${FRESHRSS_FORCE_REINSTALL:-}" in
+      1|true|TRUE|yes|YES)
+        echo "FRESHRSS_FORCE_REINSTALL set — clearing install markers"
+        rm -f data/applied_migrations.txt data/config.php data/config.php.bak.php
+        rm -rf "data/users/${ADMIN_USER}"
+        ;;
+    esac
+
     php -f ./cli/do-install.php -- \
       --api-enabled \
       --base-url "https://${FRESHRSS_SUBDOMAIN}.home-0ps.com" \

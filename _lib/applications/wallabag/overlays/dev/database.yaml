@@ -29,7 +29,7 @@ spec:
     storageClass: local-path
   bootstrap:
     recovery:
-      source: wallabag-prod-cluster
+      source: wallabag-dev-cluster
       database: wallabag
       owner: wallabag
       secret:
@@ -43,12 +43,12 @@ spec:
     parameters:
       barmanObjectName: wallabag-dev-cluster-2026
   externalClusters:
-  - name: wallabag-prod-cluster
+  - name: wallabag-dev-cluster
     plugin:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: wallabag-dev-cluster-backup
-        serverName: wallabag-prod-cluster
+        serverName: wallabag-dev-cluster
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup

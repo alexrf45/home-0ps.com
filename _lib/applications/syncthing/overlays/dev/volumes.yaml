@@ -28,7 +28,7 @@ spec:
       provisioner_driver: freenas-api-iscsi
       portal: "192.168.20.106:3260"
       portals: ""
-      iqn: "iqn.2005-10.org.freenas.ctl:dev-syncthing-config-pv"
+      iqn: "iqn.2005-10.org.freenas.ctl:dev-syncthing-config"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -74,7 +74,7 @@ spec:
       provisioner_driver: freenas-api-iscsi
       portal: "192.168.20.106:3260"
       portals: ""
-      iqn: "iqn.2005-10.org.freenas.ctl:dev-syncthing-data-pv"
+      iqn: "iqn.2005-10.org.freenas.ctl:dev-syncthing-data"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

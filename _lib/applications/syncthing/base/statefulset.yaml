@@ -68,10 +68,12 @@ spec:
             - -c
             - |
               set -eu
+              # STHOMEDIR=/var/syncthing/config is set as a default env in the
+              # upstream image, which syncthing parses as --home. Passing
+              # --config alongside it errors out, so we rely on STHOMEDIR alone.
               if [ ! -f /var/syncthing/config/config.xml ]; then
                 echo "seeding fresh syncthing config with admin credentials"
                 syncthing generate \
-                  --config=/var/syncthing/config \
                   --no-default-folder \
                   --gui-user="$GUI_USER" \
                   --gui-password="$GUI_PASSWORD"

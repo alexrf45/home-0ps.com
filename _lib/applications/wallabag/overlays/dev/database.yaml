@@ -35,7 +35,7 @@ spec:
       secret:
         name: wallabag-db-creds
       recoveryTarget:
-        backupID: "20260214T210002"
+        backupID: "20260502T220002"
         targetImmediate: true
   plugins:
   - name: barman-cloud.cloudnative-pg.io

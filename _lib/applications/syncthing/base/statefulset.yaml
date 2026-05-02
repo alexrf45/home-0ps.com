@@ -40,7 +40,7 @@ spec:
         # this is a no-op so user-applied GUI settings persist.
         - name: seed-config
           image: syncthing/syncthing:${SYNCTHING_VERSION}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000

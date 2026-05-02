@@ -385,3 +385,35 @@ spec:
                   +(runAsUser): 65534
                   +(seccompProfile):
                     type: RuntimeDefault
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disable-service-links
+  annotations:
+    policies.kyverno.io/title: Disable Service Links
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: low
+    policies.kyverno.io/description: >-
+      Sets enableServiceLinks=false on Pods in application namespaces to
+      reduce pod start time and avoid leaking the Service topology of the
+      namespace into every container as environment variables. Workloads
+      that need the legacy env-var injection can opt back in by setting
+      enableServiceLinks: true explicitly — the +() anchor leaves explicit
+      values untouched.
+spec:
+  rules:
+    - name: set-enable-service-links-false
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaceSelector:
+                matchLabels:
+                  home-0ps.com/policy-target: "application"
+      mutate:
+        patchStrategicMerge:
+          spec:
+            +(enableServiceLinks): false

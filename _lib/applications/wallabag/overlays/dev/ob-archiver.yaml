@@ -6,7 +6,7 @@ metadata:
 spec:
     retentionPolicy: 7d
     configuration:
-        destinationPath: ENC[AES256_GCM,data:/7khIgd5WBrSqNdgYeUllhUxi18JvHAkzMuNx5Y3ES9W/B34571aIRVJC6S6m1kDIcCuWkPy/6ZSQwihzNw=,iv:7Onp4ixuzcYyRZCizJUASWyh6Uu9Bl55QEEAYPP3zQA=,tag:G6hVg9b0afezwofFlCojBQ==,type:str]
+        destinationPath: ENC[AES256_GCM,data:lu9AyzxKquS2lI54vq/kd0qFboPHftLW1+oMj2NNEn3D/rYhpnMDhpfr9DyAzOtn9zip9Ppn9JsiAgs/4gQ=,iv:Ba/sUIcqr92PNnBZ65HmafCVHjJMXrfpxxxDWegS5MM=,tag:BxyNSRMWz7f+N0yyvyBcBQ==,type:str]
         s3Credentials:
             accessKeyId:
                 name: aws-creds
@@ -29,7 +29,7 @@ sops:
             dmowNWVyV1kwVTIxMExXemdwS0tLNEEK1441syTxbvOn+A+QbsoVrdHOa/2UzkaG
             O3H6KeX1wqrBJv/Kn8wwTBkx38Zd8P9mORp/Jv/5gwoJFgx4iEHrHg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-04-28T05:16:07Z"
-    mac: ENC[AES256_GCM,data:a6kizSlFBqLzHj2Q3VlCfj0fymWZXz+EBmmfuqIgWfpEEvo3G4xNgfamXNYHmhXNQPCPGIqqP1YSWZ3zLpQnNzv2E5ffUAB2onF2H7pM7HrIRWZ/fINoE+GBT4XLAm3yzRS1YDJjBfi4+G8nJJoIXUkoXUNruH8OboqLAhnES38=,iv:PIYWuGOv8P+a3jvAXkH9K5IVRHmuijKJfy8y9I8JjT4=,tag:Bbv7HsyX5ipQMFWmqlBVZA==,type:str]
+    lastmodified: "2026-05-02T22:59:52Z"
+    mac: ENC[AES256_GCM,data:KR7UsDPy00RXw/JGn9sZ7yOdDrO1MAp4bAj0NMCSyKOSU4VBZNSJLIKLlFVpWssupWoM7xIUkXBdDo60w43Hm6QF9TzSdoIfcGD7m8kXxsj9/9hPyyhodQh93ZK9/e4LhaEJh9oB/ySz89SpQ22u21gfCeB1GR+bnIfF1r27Mng=,iv:JmbGGDIySfq1vjN1ei53yRS428qKvad56qGbQYZqLCg=,tag:cZdMhQd9vU+X1hX5trH85A==,type:str]
     encrypted_regex: ^(data|destinationPath)$
     version: 3.10.2

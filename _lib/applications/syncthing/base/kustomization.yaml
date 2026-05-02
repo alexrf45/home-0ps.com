@@ -4,8 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - secrets.yaml
-  - configmap.yaml
-  - pvc.yaml
-  - deployment.yaml
+  - statefulset.yaml
   - service.yaml
+  - service-tailscale.yaml
   - httproute.yaml

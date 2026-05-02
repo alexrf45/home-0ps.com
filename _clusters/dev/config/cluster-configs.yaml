@@ -25,6 +25,8 @@ data:
   FRESHRSS_VERSION: "1.27.0-alpine"
   FRESHRSS_SUBDOMAIN: "dev.int.freshrss"
   FRESHRSS_PVC_NAME: "dev-freshrss-pvc"
-  OBSIDIAN_LIVESYNC_VERSION: "3.4.2"
-  OBSIDIAN_LIVESYNC_SUBDOMAIN: "dev.int.livesync"
+  SYNCTHING_VERSION: "1.30.0"
+  SYNCTHING_SUBDOMAIN: "dev.int.syncthing"
+  SYNCTHING_CONFIG_PVC_NAME: "dev-syncthing-config-pvc"
+  SYNCTHING_DATA_PVC_NAME: "dev-syncthing-data-pvc"
 ---

@@ -1,0 +1,30 @@
+---
+# Exposes the Syncthing BEP sync protocol (22000 TCP+UDP) on the tailnet.
+# The Tailscale operator reconciles this Service into a tailnet endpoint
+# named `${ENVIRONMENT}-syncthing` reachable from any peer in the tailnet.
+apiVersion: v1
+kind: Service
+metadata:
+  name: syncthing-tailscale
+  namespace: syncthing
+  labels:
+    app.kubernetes.io/name: syncthing
+    app.kubernetes.io/instance: syncthing-${ENVIRONMENT}
+  annotations:
+    tailscale.com/hostname: "${ENVIRONMENT}-syncthing"
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  externalTrafficPolicy: Local
+  ports:
+    - name: sync-tcp
+      protocol: TCP
+      port: 22000
+      targetPort: sync-tcp
+    - name: sync-udp
+      protocol: UDP
+      port: 22000
+      targetPort: sync-udp
+  selector:
+    app: syncthing
+    node: worker

@@ -2,7 +2,8 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: obsidian-livesync
+  name: syncthing
   labels:
-    app: "obsidian-livesync"
+    app: "syncthing"
     home-0ps.com/policy-target: "application"
+    ${GATEWAY_NAME}: "true"

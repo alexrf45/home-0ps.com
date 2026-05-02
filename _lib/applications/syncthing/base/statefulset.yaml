@@ -1,0 +1,142 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: syncthing
+  namespace: syncthing
+  labels:
+    app.kubernetes.io/name: syncthing
+    app.kubernetes.io/instance: syncthing-${ENVIRONMENT}
+    app.kubernetes.io/version: "${SYNCTHING_VERSION}"
+    environment: "${ENVIRONMENT}"
+spec:
+  replicas: 1
+  serviceName: syncthing
+  selector:
+    matchLabels:
+      app: syncthing
+  template:
+    metadata:
+      labels:
+        app: syncthing
+        node: worker
+        env: "${ENVIRONMENT}"
+        app.kubernetes.io/name: syncthing
+        app.kubernetes.io/instance: syncthing-${ENVIRONMENT}
+        app.kubernetes.io/version: "${SYNCTHING_VERSION}"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Syncthing has no env-var path for GUI credentials — config.xml is the
+        # source of truth. On first boot (no config.xml present) we run
+        # `syncthing generate` against the mounted config volume to seed a
+        # config with admin user/password and TLS keys. On subsequent boots
+        # this is a no-op so user-applied GUI settings persist.
+        - name: seed-config
+          image: syncthing/syncthing:${SYNCTHING_VERSION}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: GUI_USER
+              valueFrom:
+                secretKeyRef:
+                  name: syncthing-creds
+                  key: gui-user
+            - name: GUI_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: syncthing-creds
+                  key: gui-password
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              if [ ! -f /var/syncthing/config/config.xml ]; then
+                echo "seeding fresh syncthing config with admin credentials"
+                syncthing generate \
+                  --config=/var/syncthing/config \
+                  --no-default-folder \
+                  --gui-user="$GUI_USER" \
+                  --gui-password="$GUI_PASSWORD"
+              else
+                echo "config.xml exists — skipping generate"
+              fi
+          volumeMounts:
+            - name: config
+              mountPath: /var/syncthing/config
+      containers:
+        - name: syncthing
+          image: syncthing/syncthing:${SYNCTHING_VERSION}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: STGUIADDRESS
+              value: "0.0.0.0:8384"
+            - name: STNOUPGRADE
+              value: "true"
+            - name: STHOMEDIR
+              value: "/var/syncthing/config"
+          ports:
+            - name: gui
+              containerPort: 8384
+              protocol: TCP
+            - name: sync-tcp
+              containerPort: 22000
+              protocol: TCP
+            - name: sync-udp
+              containerPort: 22000
+              protocol: UDP
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 1Gi
+              cpu: 1000m
+          volumeMounts:
+            - name: config
+              mountPath: /var/syncthing/config
+            - name: data
+              mountPath: /var/syncthing/Sync
+          livenessProbe:
+            httpGet:
+              path: /rest/noauth/health
+              port: gui
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /rest/noauth/health
+              port: gui
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: ${SYNCTHING_CONFIG_PVC_NAME}
+        - name: data
+          persistentVolumeClaim:
+            claimName: ${SYNCTHING_DATA_PVC_NAME}

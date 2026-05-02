@@ -1,0 +1,91 @@
+---
+# Static-provisioned PV/PVC pair for Syncthing config (small, holds device IDs,
+# folder definitions, TLS keys). Backed by a manually-created TrueNAS zvol.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: dev-syncthing-config-pv
+  labels:
+    env: dev
+    app: syncthing
+    role: config
+    persistent: "true"
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: iscsi
+  csi:
+    driver: freenas-api-iscsi
+    fsType: "ext4"
+    volumeHandle: dev-syncthing-config  # Must match the zvol name in TrueNAS
+    volumeAttributes:
+      lun: "0"
+      interface: ""
+      node_attach_driver: iscsi
+      provisioner_driver: freenas-api-iscsi
+      portal: "192.168.20.106:3260"
+      portals: ""
+      iqn: "iqn.2005-10.org.freenas.ctl:dev-syncthing-config-pv"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dev-syncthing-config-pvc
+  namespace: syncthing
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: iscsi
+  volumeName: dev-syncthing-config-pv
+  resources:
+    requests:
+      storage: 2Gi
+---
+# Static-provisioned PV/PVC pair for the Syncthing data dir — actual vault
+# files. This is the volume the manual backup script targets via TrueNAS
+# snapshots.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: dev-syncthing-data-pv
+  labels:
+    env: dev
+    app: syncthing
+    role: data
+    persistent: "true"
+spec:
+  capacity:
+    storage: 30Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: iscsi
+  csi:
+    driver: freenas-api-iscsi
+    fsType: "ext4"
+    volumeHandle: dev-syncthing-data  # Must match the zvol name in TrueNAS
+    volumeAttributes:
+      lun: "0"
+      interface: ""
+      node_attach_driver: iscsi
+      provisioner_driver: freenas-api-iscsi
+      portal: "192.168.20.106:3260"
+      portals: ""
+      iqn: "iqn.2005-10.org.freenas.ctl:dev-syncthing-data-pv"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dev-syncthing-data-pvc
+  namespace: syncthing
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: iscsi
+  volumeName: dev-syncthing-data-pv
+  resources:
+    requests:
+      storage: 30Gi

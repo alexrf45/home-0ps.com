@@ -65,7 +65,11 @@ spec:
           # lets a non-root Alloy bypass DAC checks on those reads.
           add:
             - DAC_READ_SEARCH
-        readOnlyRootFilesystem: true
+        # readOnlyRootFilesystem omitted — Alloy's remotecfg service
+        # mkdirs <storagePath>/remotecfg on every boot, and the chart's
+        # storage emptyDir is mounted at the parent path only on some
+        # versions. Defense-in-depth lost here is bounded: the DaemonSet
+        # is the only writer to its own rootfs, and pods get rotated.
         runAsNonRoot: true
         runAsUser: 473
         runAsGroup: 473

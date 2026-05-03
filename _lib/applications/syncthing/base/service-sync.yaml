@@ -1,0 +1,37 @@
+---
+# LoadBalancer for the Syncthing BEP sync protocol (TCP 22000).
+#
+# Cilium L2-IPAM allocates an IP from the `external` pool and the
+# `external` CiliumL2AnnouncementPolicy ARP-advertises it on eth0
+# from worker nodes. external-dns-unifi (--source=service) creates
+# the matching A record in the UDM via the webhook provider, so
+# `${SYNCTHING_SYNC_SUBDOMAIN}.home-0ps.com` resolves to the LB IP.
+#
+# Peers add the cluster instance with address:
+#     tcp://${SYNCTHING_SYNC_SUBDOMAIN}.home-0ps.com:22000
+#
+# UDP/QUIC on 22000 deliberately omitted — BEP works fine TCP-only,
+# the network is a LAN with negligible loss, and adding UDP requires
+# no perf benefit but doubles the surface area.
+apiVersion: v1
+kind: Service
+metadata:
+  name: syncthing-sync
+  namespace: syncthing
+  labels:
+    app.kubernetes.io/name: syncthing
+    app.kubernetes.io/instance: syncthing-${ENVIRONMENT}
+    app.kubernetes.io/version: "${SYNCTHING_VERSION}"
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "${SYNCTHING_SYNC_SUBDOMAIN}.home-0ps.com"
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  ports:
+    - name: sync-tcp
+      protocol: TCP
+      port: 22000
+      targetPort: sync-tcp
+  selector:
+    app: syncthing
+    node: worker

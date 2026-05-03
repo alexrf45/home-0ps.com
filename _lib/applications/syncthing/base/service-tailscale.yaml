@@ -1,7 +1,14 @@
 ---
-# Exposes the Syncthing BEP sync protocol (22000 TCP+UDP) on the tailnet.
+# Exposes the Syncthing BEP sync protocol (22000 TCP) on the tailnet.
 # The Tailscale operator reconciles this Service into a tailnet endpoint
 # named `${ENVIRONMENT}-syncthing` reachable from any peer in the tailnet.
+#
+# TCP only on purpose: Tailscale operator's userspace proxy (which
+# satisfies PodSecurity baseline) doesn't support UDP. Adding port
+# 22000/UDP would force the operator to deploy its kernel-mode
+# privileged proxy, which is rejected by namespace PSA. BEP works
+# fine TCP-only — UDP/QUIC is just a perf optimization for lossy
+# paths, and a tailnet is neither lossy nor latency-bound.
 apiVersion: v1
 kind: Service
 metadata:
@@ -22,10 +29,6 @@ spec:
       protocol: TCP
       port: 22000
       targetPort: sync-tcp
-    - name: sync-udp
-      protocol: UDP
-      port: 22000
-      targetPort: sync-udp
   selector:
     app: syncthing
     node: worker

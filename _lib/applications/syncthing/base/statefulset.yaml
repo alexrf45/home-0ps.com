@@ -88,6 +88,13 @@ spec:
           image: syncthing/syncthing:${SYNCTHING_VERSION}
           imagePullPolicy: IfNotPresent
           securityContext:
+            # runAsUser/runAsGroup must be set explicitly here. The Kyverno
+            # add-default-securitycontext policy injects runAsUser: 65534 into
+            # any container that omits it (only-if-missing anchor), which
+            # would clash with the config files seed-config writes as
+            # 1000:1000.
+            runAsUser: 1000
+            runAsGroup: 1000
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
             capabilities:

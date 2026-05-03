@@ -96,8 +96,7 @@ spec:
       serviceMonitor:
         enabled: true
       # In-cluster Loki datasource pointing at the bare-metal Loki host
-      # via the Tailscale operator egress Service. Tempo datasource lands
-      # in Pass 3 alongside the Tempo HelmRelease.
+      # via the Tailscale operator egress Service.
       additionalDataSources:
         - name: Loki
           type: loki
@@ -106,6 +105,18 @@ spec:
           isDefault: false
           jsonData:
             maxLines: 1000
+        - name: Tempo
+          type: tempo
+          access: proxy
+          url: http://tempo.monitoring.svc.cluster.local:3100
+          isDefault: false
+          jsonData:
+            nodeGraph:
+              enabled: true
+            serviceMap:
+              datasourceUid: prometheus
+            tracesToLogsV2:
+              datasourceUid: loki
       resources:
         requests:
           cpu: 50m

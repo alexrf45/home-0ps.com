@@ -1,0 +1,65 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tempo
+  namespace: flux-system
+spec:
+  chart:
+    spec:
+      chart: tempo
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      version: "1.24.4"
+  interval: 30m
+  install:
+    crds: Skip
+    remediation:
+      retries: -1
+  upgrade:
+    crds: Skip
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: -1
+  targetNamespace: monitoring
+  values:
+    fullnameOverride: tempo
+
+    tempo:
+      reportingEnabled: false
+      # 72h retention — short-lived traces for live debugging, not historical
+      # archive. If we ever want long-term sampled traces, that's a separate
+      # tier (object storage + tempo-distributed).
+      retention: 72h
+      storage:
+        trace:
+          backend: local
+          local:
+            path: /var/tempo/traces
+          wal:
+            path: /var/tempo/wal
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+            http:
+              endpoint: 0.0.0.0:4318
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          memory: 512Mi
+
+    persistence:
+      enabled: true
+      storageClassName: iscsi
+      accessModes: ["ReadWriteOnce"]
+      size: 30Gi
+
+    serviceMonitor:
+      enabled: true

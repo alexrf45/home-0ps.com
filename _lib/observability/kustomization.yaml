@@ -5,4 +5,5 @@ resources:
   - kube-prometheus-stack
   - tailscale-egress
   - alloy
+  - tempo
   - scrape-configs

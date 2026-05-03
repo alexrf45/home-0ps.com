@@ -30,4 +30,6 @@ data:
   SYNCTHING_SYNC_SUBDOMAIN: "dev.sync.syncthing"
   SYNCTHING_CONFIG_PVC_NAME: "dev-syncthing-config-pvc"
   SYNCTHING_DATA_PVC_NAME: "dev-syncthing-data-pvc"
+  #observability
+  GRAFANA_SUBDOMAIN: "dev.int.grafana"
 ---

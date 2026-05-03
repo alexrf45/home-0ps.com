@@ -6,6 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: monitoring
     app.kubernetes.io/component: observability
+    dev-app-gateway: "true"
     # node-exporter (kube-prometheus-stack DaemonSet) needs hostNetwork,
     # hostPID, hostPath, hostPort. Talos defaults to baseline; privileged
     # is the canonical level for namespaces with host-scoped collectors.

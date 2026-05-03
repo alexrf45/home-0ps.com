@@ -6,3 +6,4 @@ metadata:
   labels:
     app: "freshrss"
     home-0ps.com/policy-target: "application"
+    dev-app-gateway: "true"

@@ -26,7 +26,10 @@ metadata:
     external-dns.alpha.kubernetes.io/hostname: "${SYNCTHING_SYNC_SUBDOMAIN}.home-0ps.com"
 spec:
   type: LoadBalancer
-  externalTrafficPolicy: Local
+  # externalTrafficPolicy left at default (Cluster). Local would only
+  # accept traffic on the node hosting syncthing-0; with cilium L2
+  # announcement the leader can be any worker, so Local causes RSTs
+  # whenever the leader and pod are on different nodes.
   ports:
     - name: sync-tcp
       protocol: TCP

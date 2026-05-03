@@ -95,6 +95,17 @@ spec:
         size: 5Gi
       serviceMonitor:
         enabled: true
+      # In-cluster Loki datasource pointing at the bare-metal Loki host
+      # via the Tailscale operator egress Service. Tempo datasource lands
+      # in Pass 3 alongside the Tempo HelmRelease.
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          access: proxy
+          url: http://loki-egress.tailscale.svc.cluster.local:3100
+          isDefault: false
+          jsonData:
+            maxLines: 1000
       resources:
         requests:
           cpu: 50m

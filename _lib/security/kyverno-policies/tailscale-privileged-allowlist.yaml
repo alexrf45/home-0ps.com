@@ -1,0 +1,84 @@
+---
+# Narrows the privileged surface in the `tailscale` namespace.
+#
+# The namespace is labeled `pod-security.kubernetes.io/enforce: privileged`
+# because the Tailscale operator hardcodes a privileged `sysctler` init
+# container on every Service-typed proxy StatefulSet (ts-*) — that init
+# runs `sysctl -w net.ipv4.ip_forward=1` and cannot be overridden via
+# ProxyClass. Without the privileged label, every ProxyGroup pod ends up
+# stuck in <pending> with FailedCreate.
+#
+# Allowing privileged-PSA on the whole namespace would mean any future pod
+# scheduled in `tailscale` could opt-in to privileged. This policy
+# constrains that opening:
+#   - Main containers may NEVER set privileged: true.
+#   - Init containers may set privileged: true ONLY when their name is
+#     literally `sysctler` (the operator's hardcoded init).
+#
+# Both rules run in Enforce mode so violations are denied at admission,
+# not merely audited.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-privileged-tailscale
+  annotations:
+    policies.kyverno.io/title: Restrict Privileged in Tailscale Namespace
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Allows only the operator's hardcoded `sysctler` init container to
+      run privileged in the tailscale namespace; forbids privileged on
+      every other container. Compensates for the namespace running on
+      privileged PSA enforce.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: forbid-privileged-main-containers
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              operations:
+                - CREATE
+                - UPDATE
+              namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: tailscale
+      validate:
+        message: "Privileged containers are not allowed in the tailscale namespace (main containers)."
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                all:
+                  - key: "{{ element.securityContext.privileged || `false` }}"
+                    operator: Equals
+                    value: true
+
+    - name: restrict-privileged-init-containers-to-sysctler
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              operations:
+                - CREATE
+                - UPDATE
+              namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: tailscale
+      validate:
+        message: "Only init containers named 'sysctler' may run privileged in the tailscale namespace."
+        foreach:
+          - list: "request.object.spec.initContainers || `[]`"
+            deny:
+              conditions:
+                all:
+                  - key: "{{ element.securityContext.privileged || `false` }}"
+                    operator: Equals
+                    value: true
+                  - key: "{{ element.name }}"
+                    operator: NotEquals
+                    value: sysctler

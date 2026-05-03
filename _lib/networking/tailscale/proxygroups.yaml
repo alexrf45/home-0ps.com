@@ -5,3 +5,16 @@ metadata:
 spec:
   type: ingress
   replicas: 3
+---
+# Egress ProxyGroup — provides outbound tailnet connectivity for in-cluster
+# workloads via ExternalName Services annotated with
+# tailscale.com/proxy-group: ts-egress. Currently fronts the bare-metal Loki
+# host (loki-egress Service in this namespace).
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyGroup
+metadata:
+  name: ts-egress
+spec:
+  type: egress
+  replicas: 2
+  proxyClass: userspace

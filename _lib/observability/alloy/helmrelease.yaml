@@ -1,0 +1,85 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy
+  namespace: flux-system
+spec:
+  chart:
+    spec:
+      chart: alloy
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      version: "1.4.0"
+  interval: 30m
+  install:
+    crds: Skip
+    remediation:
+      retries: -1
+  upgrade:
+    crds: Skip
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: -1
+  targetNamespace: monitoring
+  values:
+    fullnameOverride: alloy
+
+    alloy:
+      # External ConfigMap (alloy-config) defined alongside this release
+      configMap:
+        create: false
+        name: alloy-config
+        key: config.alloy
+
+      # Tailing /var/log/pods — needed for log discovery on Talos / containerd
+      mounts:
+        varlog: true
+        dockercontainers: false
+
+      # Where Alloy persists its file positions on the node
+      storagePath: /var/lib/alloy
+
+      # Cluster-wide pod discovery requires the chart's RBAC defaults
+      clustering:
+        enabled: false
+
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+          # /var/log/pods/*/*/*.log are root:root; CAP_DAC_READ_SEARCH
+          # lets a non-root Alloy bypass DAC checks on those reads.
+          add:
+            - DAC_READ_SEARCH
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 473
+        runAsGroup: 473
+        seccompProfile:
+          type: RuntimeDefault
+
+    controller:
+      type: daemonset
+      # Schedule on every node, including any tainted control planes
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+
+    serviceMonitor:
+      enabled: true

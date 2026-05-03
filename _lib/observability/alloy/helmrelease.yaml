@@ -61,18 +61,19 @@ spec:
         capabilities:
           drop:
             - ALL
-          # /var/log/pods/*/*/*.log are root:root; CAP_DAC_READ_SEARCH
-          # lets a non-root Alloy bypass DAC checks on those reads.
-          add:
-            - DAC_READ_SEARCH
-        # readOnlyRootFilesystem omitted — Alloy's remotecfg service
-        # mkdirs <storagePath>/remotecfg on every boot, and the chart's
-        # storage emptyDir is mounted at the parent path only on some
-        # versions. Defense-in-depth lost here is bounded: the DaemonSet
-        # is the only writer to its own rootfs, and pods get rotated.
-        runAsNonRoot: true
-        runAsUser: 473
-        runAsGroup: 473
+        # Run as root. Pod log files in /var/log/pods/*/*/*.log are
+        # mode 0640 root:root on Talos / containerd; a non-root user
+        # cannot read them. Adding CAP_DAC_READ_SEARCH via capabilities
+        # only places it in the bounding set — Linux requires the
+        # process to start as root for added caps to land in the
+        # effective set. So run as root, drop all caps for everything
+        # else (so SUID-style escapes are blocked), and rely on the
+        # PSA privileged label on the monitoring namespace to permit
+        # root containers there. This matches what Promtail / Fluent
+        # Bit / Vector do for the same reason.
+        runAsNonRoot: false
+        runAsUser: 0
+        runAsGroup: 0
         seccompProfile:
           type: RuntimeDefault
 

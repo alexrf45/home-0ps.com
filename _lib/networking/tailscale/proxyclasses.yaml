@@ -1,0 +1,42 @@
+---
+# Userspace proxy variant for Service-typed Tailscale LoadBalancers.
+#
+# By default the Tailscale operator builds Service-exposing proxy pods
+# in kernel mode: a privileged `tailscale` container plus a privileged
+# `sysctler` init container that flips net.ipv4.ip_forward and
+# net.ipv6.conf.all.forwarding. Cluster PodSecurity admission rejects
+# both, so any LoadBalancer Service that doesn't set a ProxyClass gets
+# stuck in <pending> with FailedCreate on its ts-* StatefulSet.
+#
+# This ProxyClass forces the proxy into userspace netstack mode
+# (TS_USERSPACE=true), drops privileged, and pins the container to UID
+# 1000 — same posture the operator uses for Ingress proxies, which
+# already pass admission. Reference it from a Service with:
+#
+#     metadata:
+#       annotations:
+#         tailscale.com/proxy-class: userspace
+#
+# Caveat: userspace mode is TCP-only (Tailscale's gVisor netstack does
+# not handle UDP). Don't use for any Service that needs UDP forwarding.
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: userspace
+spec:
+  statefulSet:
+    pod:
+      tailscaleContainer:
+        env:
+          - name: TS_USERSPACE
+            value: "true"
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+              - ALL

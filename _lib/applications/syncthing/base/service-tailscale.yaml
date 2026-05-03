@@ -20,6 +20,12 @@ metadata:
     app.kubernetes.io/version: "${SYNCTHING_VERSION}"
   annotations:
     tailscale.com/hostname: "${ENVIRONMENT}-syncthing"
+    # Use the non-privileged userspace ProxyClass (defined in
+    # _lib/networking/tailscale/proxyclasses.yaml). Without this the
+    # operator builds the proxy with privileged: true + a sysctler
+    # init container, which the namespace's PodSecurity baseline
+    # rejects.
+    tailscale.com/proxy-class: userspace
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale

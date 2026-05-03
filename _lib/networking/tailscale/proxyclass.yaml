@@ -17,8 +17,14 @@
 #       annotations:
 #         tailscale.com/proxy-class: userspace
 #
-# Caveat: userspace mode is TCP-only (Tailscale's gVisor netstack does
+# Caveat 1: userspace mode is TCP-only (Tailscale's gVisor netstack does
 # not handle UDP). Don't use for any Service that needs UDP forwarding.
+#
+# Caveat 2: incompatible with ProxyGroup-managed proxies (both `ingress`
+# and `egress` types). ProxyGroup pods install iptables NAT rules in the
+# pod netns to forward Service traffic — that requires privileged + root.
+# Use the operator default for ProxyGroups; only apply this ProxyClass
+# to chart-emitted Ingress proxies (e.g. wallabag's tailscale Ingress).
 apiVersion: tailscale.com/v1alpha1
 kind: ProxyClass
 metadata:

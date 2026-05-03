@@ -2,18 +2,23 @@
 # Narrows the privileged surface in the `tailscale` namespace.
 #
 # The namespace is labeled `pod-security.kubernetes.io/enforce: privileged`
-# because the Tailscale operator hardcodes a privileged `sysctler` init
-# container on every Service-typed proxy StatefulSet (ts-*) — that init
-# runs `sysctl -w net.ipv4.ip_forward=1` and cannot be overridden via
-# ProxyClass. Without the privileged label, every ProxyGroup pod ends up
-# stuck in <pending> with FailedCreate.
+# because the Tailscale operator builds Service-typed proxy StatefulSets
+# (ts-* pods) that REQUIRE kernel-mode networking:
+#   - sysctler init container flips net.ipv4.ip_forward (privileged + caps)
+#   - main tailscale container sets up iptables NAT rules in the pod's
+#     netns to forward Service traffic to/from tailnet endpoints. This
+#     also requires privileged + root (write access to /run/xtables.lock).
 #
-# Allowing privileged-PSA on the whole namespace would mean any future pod
-# scheduled in `tailscale` could opt-in to privileged. This policy
-# constrains that opening:
-#   - Main containers may NEVER set privileged: true.
-#   - Init containers may set privileged: true ONLY when their name is
-#     literally `sysctler` (the operator's hardcoded init).
+# Userspace mode (TS_USERSPACE=true) only works for Ingress-class proxies
+# the operator builds for ingressClass=tailscale; ProxyGroups (ingress or
+# egress) need kernel-mode for NAT.
+#
+# This policy keeps the privileged opening narrow:
+#   - Main containers may set privileged: true ONLY when the pod is owned
+#     by a StatefulSet whose name starts with `ts-` (operator-managed).
+#     Anything else in the namespace stays denied.
+#   - Init containers may set privileged: true ONLY when named `sysctler`
+#     (the operator's hardcoded init, regardless of owner).
 #
 # Both rules run in Enforce mode so violations are denied at admission,
 # not merely audited.
@@ -46,6 +51,14 @@ spec:
               namespaceSelector:
                 matchLabels:
                   kubernetes.io/metadata.name: tailscale
+      preconditions:
+        all:
+          # Skip pods owned by ts-* StatefulSets (operator-managed
+          # ProxyGroup proxies). Their main tailscale container is
+          # privileged by design — the privileged-PSA label permits it.
+          - key: "{{ request.object.metadata.ownerReferences[?kind=='StatefulSet' && starts_with(name, 'ts-')] | length(@) }}"
+            operator: Equals
+            value: 0
       validate:
         message: "Privileged containers are not allowed in the tailscale namespace (main containers)."
         foreach:

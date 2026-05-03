@@ -40,8 +40,10 @@ spec:
         varlog: true
         dockercontainers: false
 
-      # Where Alloy persists its file positions on the node
-      storagePath: /var/lib/alloy
+      # Use the chart's default storagePath (/tmp/alloy) — the chart auto-mounts
+      # an emptyDir at that path. Overriding it without also wiring a writable
+      # volume there breaks any feature that writes data (e.g. remotecfg) when
+      # readOnlyRootFilesystem is true.
 
       # Cluster-wide pod discovery requires the chart's RBAC defaults
       clustering:

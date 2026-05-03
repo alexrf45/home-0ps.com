@@ -78,7 +78,7 @@ ssh -o BatchMode=yes "${TRUENAS_USER}@${TRUENAS_HOST}" "
   sudo zfs clone -o readonly=on '${SNAP}' '${CLONE}'
   sudo mkdir -p '${MNT}'
   ZVOL_DEV=\$(readlink -f '/dev/zvol/${CLONE}')
-  sudo mount -o ro '\${ZVOL_DEV}' '${MNT}'
+  sudo mount -o ro,norecovery \"\${ZVOL_DEV}\" '${MNT}'
 "
 
 log "running restic backup (this streams over SSH+tar)"

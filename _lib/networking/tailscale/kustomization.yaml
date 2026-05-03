@@ -5,5 +5,4 @@ resources:
   - helmrepository.yaml
   - helmrelease.yaml
   # - proxygroups.yaml
-  - proxyclasses.yaml
   - secrets.yaml

@@ -21,3 +21,10 @@ spec:
   scheme: HTTP
   scrapeInterval: 30s
   scrapeTimeout: 10s
+  # Overwrite the auto-derived job label (defaults to
+  # `scrapeConfig/monitoring/truenas`) so TrueNAS appears alongside the
+  # cluster nodes in the kube-prometheus-stack "Node Exporter / Nodes"
+  # dashboard, which filters by job="node-exporter".
+  relabelings:
+    - targetLabel: job
+      replacement: node-exporter

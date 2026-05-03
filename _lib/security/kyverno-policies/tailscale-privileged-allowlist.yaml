@@ -35,6 +35,15 @@ metadata:
       run privileged in the tailscale namespace; forbids privileged on
       every other container. Compensates for the namespace running on
       privileged PSA enforce.
+    # Disable autogen — Kyverno would otherwise synthesize StatefulSet /
+    # DaemonSet / Deployment variants of these rules and rewrite the
+    # JMESPath path to .spec.template.metadata.ownerReferences, which
+    # doesn't exist on a controller resource (only on the Pod). The
+    # synthesized rule then crashes and DENIES every controller update,
+    # which blocks the Tailscale operator from reconciling its
+    # ts-* StatefulSets. Pod admission is sufficient — the controller
+    # creates Pods, and the policy validates each Pod directly.
+    pod-policies.kyverno.io/autogen-controllers: none
 spec:
   validationFailureAction: Enforce
   background: true

@@ -65,16 +65,18 @@ data:
       }
 
       // Build the log path: /var/log/pods/<ns>_<pod>_<uid>/<container>/*.log
+      // Default regex "(.*)" yields a single capture group $1 holding the
+      // joined source labels — so we join uid/container with `/` and use a
+      // leading * glob to match the <ns>_<pod>_ prefix on the pod dir.
       rule {
         source_labels = [
-          "__meta_kubernetes_namespace",
-          "__meta_kubernetes_pod_name",
           "__meta_kubernetes_pod_uid",
           "__meta_kubernetes_pod_container_name",
         ]
         separator    = "/"
+        action       = "replace"
         target_label = "__path__"
-        replacement  = "/var/log/pods/*$1_$2_$3/$4/*.log"
+        replacement  = "/var/log/pods/*$1/*.log"
       }
     }
 

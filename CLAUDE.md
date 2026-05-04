@@ -77,14 +77,15 @@ The kubeconfig is **not on disk**. It lives in 1Password and is fetched on deman
 by `~/.zsh/kubeop.sh`, which is sourced from `~/.zshrc`. Every command that
 talks to a live cluster MUST go through one of these wrappers:
 
-| Wrapper | Use for |
-| --- | --- |
-| `kube [env] <args>`        | kubectl (env defaults to `dev`) |
-| `k9s-op [env] <args>`      | k9s |
+| Wrapper                     | Use for                                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------------------- |
+| `kube [env] <args>`         | kubectl (env defaults to `dev`)                                                              |
+| `k9s-op [env] <args>`       | k9s                                                                                          |
 | `k8sop <env> <tool> <args>` | any other kubeconfig-aware tool: flux, helm, kustomize, kubectl-cnpg, stern, kubecolor, etc. |
-| `kube-flush`               | drop the cached kubeconfig (re-fetch on next call) |
+| `kube-flush`                | drop the cached kubeconfig (re-fetch on next call)                                           |
 
 Examples:
+
 - `kube dev get pods -A`
 - `kube dev -n freshrss rollout restart deploy/freshrss`
 - `k8sop dev flux reconcile kustomization security --with-source`
@@ -113,14 +114,14 @@ module at `terraform/dev/talos-pve-v3.1.0/config-export.tf`.
 
 Runnable slash commands live in `.claude/commands/`:
 
-| Command | Purpose |
-| --- | --- |
-| `/lint` | Run yamllint across the repo |
+| Command                  | Purpose                                      |
+| ------------------------ | -------------------------------------------- |
+| `/lint`                  | Run yamllint across the repo                 |
 | `/flux-reconcile [name]` | Reconcile a Flux kustomization (or list all) |
-| `/flux-status` | Show state of all Flux resources |
-| `/cluster-health` | Check pod and Talos node health |
-| `/terraform-plan` | Init + plan the dev cluster |
-| `/terraform-apply` | Init + plan + apply the dev cluster |
+| `/flux-status`           | Show state of all Flux resources             |
+| `/cluster-health`        | Check pod and Talos node health              |
+| `/terraform-plan`        | Init + plan the dev cluster                  |
+| `/terraform-apply`       | Init + plan + apply the dev cluster          |
 
 **Secrets (SOPS):** Never modify or re-encrypt `.env` files, SOPS-encrypted files, or secrets without explicit user confirmation. The user manages secrets themselves. SOPS config is at `_clusters/dev/.sops.yaml` — files matching `*values.yaml` are fully encrypted; other YAML files encrypt only `data` and `stringData` fields.
 
@@ -132,15 +133,15 @@ Runnable slash commands live in `.claude/commands/`:
 
 ### Directory layout
 
-| Directory        | Purpose                                                                    |
-| ---------------- | -------------------------------------------------------------------------- |
-| `_clusters/`     | Cluster entrypoints — Flux reads `_clusters/<env>` to start reconciliation |
-| `_lib/`          | Shared manifests, organized by deployment layer (controllers, pki, secrets, networking, dns, storage, security, applications) |
-| `global/`        | CRDs applied across all clusters (Prometheus Operator, CNPG)               |
-| `terraform/`     | Cluster provisioning (Talos on Proxmox, wallabag S3 backup infra)          |
-| `_templates/`    | Boilerplate for HelmRelease, HelmRepository, Kustomization resources       |
-| `_hack/`         | One-off scripts and example YAML                                           |
-| `_docs/`         | Reviews, runbooks, migration notes                                         |
+| Directory     | Purpose                                                                                                                       |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `_clusters/`  | Cluster entrypoints — Flux reads `_clusters/<env>` to start reconciliation                                                    |
+| `_lib/`       | Shared manifests, organized by deployment layer (controllers, pki, secrets, networking, dns, storage, security, applications) |
+| `global/`     | CRDs applied across all clusters (Prometheus Operator, CNPG)                                                                  |
+| `terraform/`  | Cluster provisioning (Talos on Proxmox, wallabag S3 backup infra)                                                             |
+| `_templates/` | Boilerplate for HelmRelease, HelmRepository, Kustomization resources                                                          |
+| `_hack/`      | One-off scripts and example YAML                                                                                              |
+| `_docs/`      | Reviews, runbooks, migration notes                                                                                            |
 
 ### Flux reconciliation layers (dependency order)
 
@@ -182,3 +183,24 @@ The `cluster-config` ConfigMap (at `_clusters/dev/config/cluster-configs.yaml`) 
 - Multiple documents per file allowed (`---` separator)
 - `document-start: disable` (leading `---` optional)
 - `comments-indentation: disable` (Flux-generated files have inconsistent comment indentation)
+
+## Kubernetes Operations
+
+- Always use the `k8sop` (or `kube`) wrapper for kubectl commands, not raw `kubectl`
+- Verify operator/wrapper conventions before executing cluster commands
+  Add under a ## Terraform / IaC section, or create one if it doesn't exist
+
+  ## Provider/Library Versions
+
+- Always fetch live, current docs for Terraform providers (especially Cloudflare) before generating config; do not rely on cached/training-data syntax
+- Verify the major version pinned in the repo before writing resource blocks
+  Add as a ## Debugging Discipline section near the top of CLAUDE.md so it informs every session
+
+  ## Debugging Discipline
+
+- When a fix fails, re-diagnose the root cause before attempting another fix; avoid stacking speculative changes
+- For permission/init-container issues, enumerate ALL writable paths the app needs (run dirs, log dirs, cache dirs) in one pass
+
+## Code Fixes
+
+Before suggesting any fix, do this: (1) state the exact error/symptom, (2) identify the failing component and read its actual config/logs, (3) form a hypothesis and tell me how you'll verify it, (4) THEN propose a fix. Do not iterate on speculative fixes.

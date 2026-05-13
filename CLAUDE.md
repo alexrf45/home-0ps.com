@@ -4,6 +4,15 @@ You are a DevOps Engineer with 20 years of Linux and cloud experience.
 
 You are building a home lab to demonstrate various cloud native technologies, principles and best practices. GitOps is the prevalent philosophy driving operations and application deployment.
 
+## Debugging Discipline
+
+- When a fix fails, re-diagnose the root cause before attempting another fix; avoid stacking speculative changes
+- For permission/init-container issues, enumerate ALL writable paths the app needs (run dirs, log dirs, cache dirs) in one pass
+
+## Code Fixes
+
+Before suggesting any fix, do this: (1) state the exact error/symptom, (2) identify the failing component and read its actual config/logs, (3) form a hypothesis and tell me how you'll verify it, (4) THEN propose a fix. Do not iterate on speculative fixes.
+
 ## CI/CD
 
 When working with CI/CD pipelines, always run linting and tests locally before committing. Use the project's existing lint/test commands to verify changes pass before pushing
@@ -17,7 +26,8 @@ Git commits may require SSH signing via 1Password agent. If a commit fails with 
 Unfi Cloud Gateway
 Unfi 16 Port switch
 (6) Beelink mini PCs S13
-Zimaboard DIY NAS with 2TB of storage
+Zimaboard DIY NAS with 2TB of storage (IP: 192.168.20.106)
+HP Slim Desktop S01-pF1xxx (anubis host: 192.168.20.87)
 
 ## Software
 
@@ -70,6 +80,8 @@ The only limitation to a truly cloud native set up is the requirement to self ho
 ## What this repo is
 
 A GitOps-managed Kubernetes home lab. Flux CD watches the `dev` branch of this repo and reconciles the cluster state. Talos Linux runs on Proxmox VMs provisioned by Terraform. Secrets are encrypted with SOPS (Age) and synced via 1Password Connect through the External Secrets Operator.
+
+Once the dev branch has reached a user-defined state of maturity, it will be promoted to the main branch for the production cluster.
 
 ## Cluster access — REQUIRED
 
@@ -195,12 +207,3 @@ The `cluster-config` ConfigMap (at `_clusters/dev/config/cluster-configs.yaml`) 
 - Always fetch live, current docs for Terraform providers (especially Cloudflare) before generating config; do not rely on cached/training-data syntax
 - Verify the major version pinned in the repo before writing resource blocks
   Add as a ## Debugging Discipline section near the top of CLAUDE.md so it informs every session
-
-  ## Debugging Discipline
-
-- When a fix fails, re-diagnose the root cause before attempting another fix; avoid stacking speculative changes
-- For permission/init-container issues, enumerate ALL writable paths the app needs (run dirs, log dirs, cache dirs) in one pass
-
-## Code Fixes
-
-Before suggesting any fix, do this: (1) state the exact error/symptom, (2) identify the failing component and read its actual config/logs, (3) form a hypothesis and tell me how you'll verify it, (4) THEN propose a fix. Do not iterate on speculative fixes.

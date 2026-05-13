@@ -36,6 +36,8 @@ spec:
 
     alertmanager:
       alertmanagerSpec:
+        secrets:
+          - slack-webhook
         storage:
           volumeClaimTemplate:
             spec:
@@ -50,6 +52,73 @@ spec:
             memory: 100Mi
           limits:
             memory: 200Mi
+      config:
+        global:
+          resolve_timeout: 5m
+        route:
+          receiver: slack-warning
+          group_by: ["alertname", "namespace"]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 12h
+          routes:
+            - matchers:
+                - alertname = "Watchdog"
+              receiver: "null"
+            - matchers:
+                - severity = "info"
+              receiver: "null"
+            - matchers:
+                - severity = "critical"
+              receiver: slack-critical
+              group_wait: 10s
+              repeat_interval: 1h
+              continue: false
+            - matchers:
+                - severity = "warning"
+              receiver: slack-warning
+              continue: false
+        inhibit_rules:
+          - source_matchers:
+              - severity = "critical"
+            target_matchers:
+              - severity = "warning"
+            equal: ["alertname", "namespace"]
+        receivers:
+          - name: "null"
+          - name: slack-critical
+            slack_configs:
+              - api_url_file: /etc/alertmanager/secrets/slack-webhook/url
+                channel: "#alerts"
+                send_resolved: true
+                color: danger
+                title: ':rotating_light: [{{ .Status | toUpper }}] {{ .CommonLabels.alertname }} ({{ .CommonLabels.namespace }})'
+                text: |-
+                  *Cluster:* `${CLUSTER_NAME}` (`${ENVIRONMENT}`)
+                  {{ range .Alerts }}
+                  *Severity:* `{{ .Labels.severity }}`
+                  *Namespace:* `{{ .Labels.namespace }}`
+                  *Pod:* `{{ .Labels.pod }}`
+                  *Summary:* {{ .Annotations.summary }}
+                  *Description:* {{ .Annotations.description }}
+                  {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+                  {{ end }}
+          - name: slack-warning
+            slack_configs:
+              - api_url_file: /etc/alertmanager/secrets/slack-webhook/url
+                channel: "#alerts"
+                send_resolved: true
+                color: warning
+                title: ':warning: [{{ .Status | toUpper }}] {{ .CommonLabels.alertname }} ({{ .CommonLabels.namespace }})'
+                text: |-
+                  *Cluster:* `${CLUSTER_NAME}` (`${ENVIRONMENT}`)
+                  {{ range .Alerts }}
+                  *Severity:* `{{ .Labels.severity }}`
+                  *Namespace:* `{{ .Labels.namespace }}`
+                  *Pod:* `{{ .Labels.pod }}`
+                  *Summary:* {{ .Annotations.summary }}
+                  *Description:* {{ .Annotations.description }}
+                  {{ end }}
 
     prometheus:
       prometheusSpec:

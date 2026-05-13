@@ -1,0 +1,54 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: home-0ps-custom-rules
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: kube-prometheus-stack
+spec:
+  groups:
+    - name: pod-oom
+      interval: 30s
+      rules:
+        - alert: PodOOMKilled
+          expr: kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Container OOMKilled in {{ $labels.namespace }}/{{ $labels.pod }}"
+            description: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} was OOMKilled. Raise memory limits or investigate the workload."
+
+    - name: flux-reconciliation
+      interval: 1m
+      rules:
+        - alert: FluxKustomizationNotReady
+          expr: max by (namespace, name) (gotk_reconcile_condition{type="Ready", status="False", kind="Kustomization"}) == 1
+          for: 10m
+          labels:
+            severity: warning
+            component: flux
+          annotations:
+            summary: "Flux Kustomization {{ $labels.namespace }}/{{ $labels.name }} not ready"
+            description: "Kustomization has been NotReady for 10m. Run `k8sop dev flux get kustomization {{ $labels.name }}` for the reconciliation error."
+
+        - alert: FluxHelmReleaseNotReady
+          expr: max by (namespace, name) (gotk_reconcile_condition{type="Ready", status="False", kind="HelmRelease"}) == 1
+          for: 10m
+          labels:
+            severity: warning
+            component: flux
+          annotations:
+            summary: "Flux HelmRelease {{ $labels.namespace }}/{{ $labels.name }} not ready"
+            description: "HelmRelease has been NotReady for 10m. Check chart values and CRD readiness."
+
+        - alert: FluxResourceSuspended
+          expr: max by (namespace, name, kind) (gotk_suspend_status{kind=~"Kustomization|HelmRelease"}) == 1
+          for: 6h
+          labels:
+            severity: warning
+            component: flux
+          annotations:
+            summary: "Flux {{ $labels.kind }} {{ $labels.namespace }}/{{ $labels.name }} suspended >6h"
+            description: "A Flux reconciler has been suspended over 6h. Confirm this is intentional."

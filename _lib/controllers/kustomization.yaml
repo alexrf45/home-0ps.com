@@ -6,6 +6,4 @@ resources:
   - ./cloudnativepg
 #  - ./falco
   - ./kyverno
-  - ./mariadb-operator
-  - ./redis-operator
   - ./renovate

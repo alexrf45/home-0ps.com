@@ -5,7 +5,7 @@
 ## home-0ps.com
 
 ![GitHub repo size](https://img.shields.io/github/repo-size/alexrf45/khepri) [![Static Badge](https://img.shields.io/badge/fr3d.dev-blue?style=plastic&link=https%3A%2F%2Ffr3d.dev)](https://blog.fr3d.dev)
-![Static Badge](https://img.shields.io/badge/talos-v1.11.5-orange?style=plastic&logo=Talos&logoColor=%23FF7300) ![Static Badge](https://img.shields.io/badge/k8s-v1.34.0-blue?style=plastic&logo=Kubernetes&logoColor=%23326CE5&logoSize=auto) ![Static Badge](https://img.shields.io/badge/flux-v2.6.4-blue?style=plastic&logo=flux&logoSize=auto&link=https%3A%2F%2Fblog.fr3d.dev) ![Static Badge](https://img.shields.io/badge/terraform-v1.13.3-purple?style=plastic&logo=terraform&color=%237B42BC) ![Static Badge](https://img.shields.io/badge/proxmox-v9.1.4-orange?style=plastic&logo=proxmox&logoSize=auto&link=https%3A%2F%2Fblog.fr3d.dev)
+![Static Badge](https://img.shields.io/badge/talos-v1.13.0-orange?style=plastic&logo=Talos&logoColor=%23FF7300) ![Static Badge](https://img.shields.io/badge/k8s-v1.35.0-blue?style=plastic&logo=Kubernetes&logoColor=%23326CE5&logoSize=auto) ![Static Badge](https://img.shields.io/badge/flux-v2.7.5-blue?style=plastic&logo=flux&logoSize=auto&link=https%3A%2F%2Fblog.fr3d.dev) ![Static Badge](https://img.shields.io/badge/terraform-v1.13.3-purple?style=plastic&logo=terraform&color=%237B42BC) ![Static Badge](https://img.shields.io/badge/proxmox-v9.1.4-orange?style=plastic&logo=proxmox&logoSize=auto&link=https%3A%2F%2Fblog.fr3d.dev)
 
 **_A living, breathing home lab that champions a love of learning and discovery_**
 
@@ -15,11 +15,10 @@
 
 ## Applications
 
-| Application                                                                                      | Status   | Environment | URL                |
-| ------------------------------------------------------------------------------------------------ | -------- | ----------- | ------------------ |
-| ![Wallabag](https://img.shields.io/badge/Wallabag-5a524c?logo=wallabag&logoColor=white)          | Active   | Prod        | Read-later service |
-| ![Homepage](https://img.shields.io/badge/Homepage-a9b665?logo=homepage&logoColor=white)          | Inactive | Dev, Prod   | Application Portal |
-| ![IT-Tools](https://img.shields.io/badge/IT--Tools-00D8FF?logo=visualstudiocode&logoColor=white) | Inactive | Dev, Prod   | Useful tools       |
+| Application                                                                                  | Status | Environment | Purpose                  |
+| -------------------------------------------------------------------------------------------- | ------ | ----------- | ------------------------ |
+| ![FreshRSS](https://img.shields.io/badge/FreshRSS-2D2D2D?logo=rss&logoColor=white)           | Active | Dev         | Self-hosted RSS reader   |
+| ![Syncthing](https://img.shields.io/badge/Syncthing-0891D1?logo=syncthing&logoColor=white)   | Active | Dev         | Continuous file sync     |
 
 </div>
 
@@ -36,8 +35,8 @@
 ![ExternalDNS](https://img.shields.io/badge/External_DNS-326CE5?logo=kubernetes&logoColor=white)
 ![Ubiquiti](https://img.shields.io/badge/Ubiquiti-0559C9?logo=ubiquiti&logoColor=white)
 ![Storage](https://img.shields.io/badge/Local_Path-326CE5?logo=kubernetes&logoColor=white)
-![MariaDB](https://img.shields.io/badge/MariaDB-003545?logo=mariadb&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![CloudNativePG](https://img.shields.io/badge/CloudNativePG-336791?logo=postgresql&logoColor=white)
 ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Grafana-F46800?logo=grafana&logoColor=white)
 ![Cert-Manager](https://img.shields.io/badge/cert--manager-326CE5?logo=kubernetes&logoColor=white)
@@ -84,8 +83,8 @@ kube dev get pods -A
 kube dev -n freshrss rollout restart deploy/freshrss
 k8sop dev flux reconcile kustomization security --with-source
 k8sop dev helm list -A
-k8sop dev kustomize build _lib/applications/wallabag/overlays/dev
-k8sop dev stern -n wallabag .
+k8sop dev kustomize build _lib/applications/freshrss/overlays/dev
+k8sop dev stern -n syncthing .
 ```
 
 **Why use this pattern in your own lab:**

@@ -21,9 +21,13 @@ The fresh provision happened and the lab is materially further along than at the
 - **CRD pattern formalized** in `global/crds/` per CLAUDE.md.
 - **Public-cloud (Hetzner) dirs were added then abandoned** — confirmed dead, cleanup candidate.
 
-**Still open and not moving:** the security-hardening tier from the original roadmap — Falco (H-3), Cilium NetworkPolicies (H-2), ResourceQuotas/LimitRanges (H-4), Trivy. Plus the resilience gaps surfaced by the self-deployment review: zero PodDisruptionBudgets, no `terminationGracePeriodSeconds`, partial probe coverage. And the one-line C-2 (`letsencrypt-staging` → production) — the staging cert has been Ready for 13d, so this is now safe to flip.
+**Still open and not moving:** the security-hardening tier from the original roadmap — Falco (H-3), Cilium NetworkPolicies (H-2), ResourceQuotas/LimitRanges (H-4), Trivy. Plus the resilience gaps surfaced by the self-deployment review: zero PodDisruptionBudgets, no `terminationGracePeriodSeconds` on freshrss.
 
-The natural next sprint: **flip C-2, label the wallabag namespace (H-1 closeout), then work the security-hardening tier (H-2/H-3/H-4) now that observability can consume the signals.** Resilience (PDBs, probes, grace periods) pairs well with H-4. See §3 for the prioritized punch list.
+**Post-2026-05-11 amendments:**
+- **C-2 reclassified:** the wildcard cert pointing at `letsencrypt-staging` is **intentional for the dev cluster**. A separate wildcard cert on `letsencrypt-production` will be implemented for the prod cluster when it's stood up — staging here keeps us off LE prod's rate limits during dev churn. Not a flip; carry the prod issuer in `_clusters/production/` overlays.
+- **Wallabag spun down 2026-05-14** (manifests archived to `_docs/archive/wallabag/`). This closes R-2, R-6 (wallabag was the only probe gap), and R-8, and trims H-1, R-1, R-7 to freshrss/syncthing-only scope. It also fully orphans `redis-operator`, so the idle-operator hygiene item now reads "remove both".
+
+The natural next sprint: **work the security-hardening tier (H-2/H-3/H-4) now that observability can consume the signals; bundle the H-1 freshrss side-fix into whichever PR touches `_lib/applications/freshrss/base/`.** Resilience (PDBs, freshrss grace period) pairs well with H-4. See §3 for the prioritized punch list.
 
 ---
 
@@ -61,8 +65,8 @@ Operators:  cert-manager, trust-manager, cnpg, democratic-csi (×2), external-dn
 ```
 
 Notable from the snapshot:
-- **`mariadb-operator` and `redis-operator` are deployed but have zero CRs.** Wallabag moved to CNPG/Postgres; nothing uses MariaDB. Wallabag's Deployment references `redis_host` / `redis_password` env from the `wallabag-creds` secret, but **no Redis instance exists** — decide whether to deploy one or strip the env wiring (and the operator).
-- The wildcard cert is still a **staging** cert — browsers will warn. C-2 below.
+- **`mariadb-operator` and `redis-operator`** were deployed but had zero CRs after wallabag's spin-down — **both removed in the 2026-05-14 hygiene pass**. See the Hygiene table.
+- The wildcard cert is a **staging** cert — intentional for dev (browsers will warn; that's accepted). Prod cluster will get its own `letsencrypt-production`-issued wildcard. See C-2.
 - CNPG Postgres on `local-path` means the DB is pinned to a node and not on the iscsi pool — intentional for IOPS, but worth a conscious note in the DR story (Barman→S3 is the safety net).
 
 ---
@@ -75,14 +79,14 @@ Grouped by tier. Each item: **ID · what · status · exact location · next act
 
 | ID | Item | Status | Location | Next action |
 |----|------|--------|----------|-------------|
-| C-2 | Wildcard cert on `letsencrypt-staging` | ⏳ Ready to flip | `_lib/networking/gateway/tls.yaml:10` | Change `letsencrypt-staging` → `letsencrypt-production`. Staging cert has been Ready 13d, so the DNS-01 path works. LE prod has rate limits — do it once, don't churn it. After: `kube dev get certificate -n networking wildcard-tls` shows the prod issuer. |
+| C-2 | Wildcard cert on `letsencrypt-staging` | ✅ Intentional (dev) | `_lib/networking/gateway/tls.yaml:10` | **Not an open item for the dev cluster.** Staging issuer is deliberate to stay off LE prod's rate limits during dev churn — browsers warning on `*.home-0ps.com` is accepted. **Carry-forward for prod bring-up:** when `_clusters/production/` goes live, add a `wildcard-tls` Certificate there that references `letsencrypt-production`, scoped to the prod gateway. Do not flip the dev manifest. |
 
 ### HIGH — security hardening
 
 | ID | Item | Status | Location | Next action |
 |----|------|--------|----------|-------------|
-| H-1 | Kyverno Audit policies + namespace labeling | ⚠️ Audit live; **wallabag ns not labeled** | `_lib/applications/wallabag/base/namespace.yaml` | Add `home-0ps.com/policy-target: "application"` and `${GATEWAY_NAME}: "true"` to the wallabag namespace (freshrss + syncthing already have it). Then `kube dev get policyreport -n wallabag` shows audit findings. Side fix: `_lib/applications/freshrss/base/namespace.yaml` hard-codes `dev-app-gateway: "true"` — switch to `${GATEWAY_NAME}` for consistency with syncthing. |
-| H-2 | Cilium NetworkPolicies | ❌ Not started | `_lib/security/cilium-network-policies/` (only a commented-out stale `obsidian-couchdb-networkpolicy.yaml`) | Build default-deny-per-namespace + per-app allow rules; uncomment the dir in `_lib/security/kustomization.yaml`. Wallabag → CNPG (and → external `192.168.20.87` Loki path for Alloy) is the test case. Delete the obsidian-couchdb policy (dead). |
+| H-1 | Kyverno Audit policies + namespace labeling | ⚠️ Side-fix only (wallabag portion moot post-2026-05-14 spin-down) | `_lib/applications/freshrss/base/namespace.yaml` | `_lib/applications/freshrss/base/namespace.yaml` hard-codes `dev-app-gateway: "true"` — switch to `${GATEWAY_NAME}` for consistency with syncthing. |
+| H-2 | Cilium NetworkPolicies | ❌ Not started | `_lib/security/cilium-network-policies/` (only a stale `obsidian-couchdb-networkpolicy.yaml`) | Build default-deny-per-namespace + per-app allow rules; uncomment the dir in `_lib/security/kustomization.yaml`. FreshRSS → CNPG (and Alloy → external `192.168.20.87` Loki via Tailscale egress) is the test case. Delete the obsidian-couchdb policy (dead). |
 | H-3 | Falco | ❌ Disabled | `_lib/controllers/kustomization.yaml` (`#  - ./falco`) + `_lib/security/kustomization.yaml` (`#- ./falco-rules`) | HelmRelease `8.0.0` is configured for Talos (modern_ebpf, falcosidekick + UI, ServiceMonitors). Observability now exists to consume the metrics → unblocked. Uncomment both, verify the eBPF driver loads on Talos, confirm Prometheus scrapes the ServiceMonitor. |
 | H-4 | ResourceQuotas + LimitRanges per namespace | ❌ Not started | none in `_lib`/`global` | Add `ResourceQuota` + `LimitRange` to each app namespace's `base/` (so `LimitRange` defaults apply at admission; dev overlay narrows). Seed values from `kube dev top pod -n <ns>` once Prometheus has ~30d. Pairs naturally with R-1. |
 | H-5 | Trivy operator | ❌ Disabled / empty | `_lib/security/trivy/` (empty dir) + `_lib/security/kustomization.yaml` (`#- ./trivy`) | Populate the dir (HelmRelease for trivy-operator), uncomment. Emits vuln + config-audit reports as CRs; wire a Grafana panel / Prometheus metrics. |
@@ -91,14 +95,14 @@ Grouped by tier. Each item: **ID · what · status · exact location · next act
 
 | ID | Item | Status | Next action |
 |----|------|--------|-------------|
-| R-1 | PodDisruptionBudgets | ❌ Zero in repo | Add `policy/v1 PodDisruptionBudget` (`maxUnavailable: 1`, label-selected) to `_lib/applications/{wallabag,freshrss,syncthing}/base/`. Use CNPG's own affinity/maintenance primitives for the DB clusters — don't hand-roll a PDB over CNPG pods. Verify with a `--dry-run=server` drain. |
-| R-2 | Wallabag resource limits | ✅ Done | 1Gi/1000m limits, 256Mi/100m requests — well above `PHP_MEMORY_LIMIT=500M`. |
-| R-3 | HPA | ⏸️ Deferred | All apps are stateful single-replica; no candidate until Thoth's BFF. Do not add to wallabag/freshrss. |
+| R-1 | PodDisruptionBudgets | ❌ Zero in repo | Add `policy/v1 PodDisruptionBudget` (`maxUnavailable: 1`, label-selected) to `_lib/applications/{freshrss,syncthing}/base/`. Use CNPG's own affinity/maintenance primitives for the DB clusters — don't hand-roll a PDB over CNPG pods. Verify with a `--dry-run=server` drain. |
+| R-2 | Wallabag resource limits | ✅ Moot (wallabag spun down 2026-05-14) | — |
+| R-3 | HPA | ⏸️ Deferred | All apps are stateful single-replica; no candidate until Thoth's BFF. |
 | R-4 | Dual external-dns | ✅ Done | Only the UniFi-webhook variant remains. |
 | R-5 | Renovate config | ✅ Done | In-cluster config authoritative; root `renovate.json` intentionally minimal. |
-| R-6 | Probe coverage | ⚠️ Partial | Only `syncthing/base/statefulset.yaml` + `freshrss/base/deployment.yaml` have probes. Add to wallabag: `httpGet /` on `:80` (web), `tcpSocket :9000` (FPM) with `initialDelaySeconds: 30`. Don't override CNPG's probes. |
-| R-7 | `terminationGracePeriodSeconds` | ❌ None set | Set 60–120s on wallabag/freshrss so PHP-FPM drains in-flight before SIGKILL. |
-| R-8 | Wallabag Redis wiring without a Redis | ⚠️ Inconsistent | Deployment consumes `redis_host`/`redis_password` from `wallabag-creds`, but no Redis CR exists and `redis-operator` is idle. Either deploy a small Redis (`redis-operator` CR) and point wallabag at it, or remove the redis env vars from `_lib/applications/wallabag/base/deployment.yaml` and the unused operator. |
+| R-6 | Probe coverage | ✅ Done (post-wallabag) | `syncthing/base/statefulset.yaml` + `freshrss/base/deployment.yaml` both have probes; wallabag (the only gap) is gone. |
+| R-7 | `terminationGracePeriodSeconds` | ⚠️ Not set on freshrss | Set 30–60s on `_lib/applications/freshrss/base/deployment.yaml` so PHP-FPM drains in-flight before SIGKILL. Syncthing's StatefulSet termination is handled by the BEP shutdown path. |
+| R-8 | Wallabag Redis wiring without a Redis | ✅ Moot (wallabag spun down 2026-05-14) | redis-operator is now fully orphaned — see Hygiene "Idle operators". |
 
 ### Observability follow-ups (Phase 0 complete → these are Phase 1)
 
@@ -109,19 +113,18 @@ Grouped by tier. Each item: **ID · what · status · exact location · next act
 | O-6 | Periodic posture scans | ❌ | `popeye` + `kubescape framework nsa,mitre` CronJobs (daily, low priority class, `concurrencyPolicy: Forbid`) → stdout → Loki. Forcing function for R-1/R-6. |
 | O-7 | Alertmanager routing | ❌ | No alert channels defined. Wire Slack/ntfy/email receiver + a starter ruleset (node down, PVC near full, CNPG not-healthy, cert expiry). |
 | O-8 | Default-deny CiliumNetworkPolicy | ❌ | Same work as H-2 — the Phase 1 trigger from the observability plan. |
-| O-9 | App-level dashboards/alerts | ❌ | Wallabag PHP-FPM, FreshRSS, Syncthing — once each app is individually instrumented. |
+| O-9 | App-level dashboards/alerts | ❌ | FreshRSS, Syncthing — once each app is individually instrumented. |
 
 ### Hygiene / cleanup
 
 | Item | Location | Action |
 |------|----------|--------|
-| Hetzner/public-cloud dirs (abandoned) | `_lib/controllers/hetzner`, `_lib/controllers/hcloud-ccm`, `_lib/networking/hetzner`, `_lib/storage/hetzner`, `_lib/storage/hetzner-csi` | Delete. Not referenced by any cluster Kustomization. Check `.gitignore`/Renovate paths don't reference them after. |
-| Stale Cilium policy | `_lib/security/cilium-network-policies/obsidian-couchdb-networkpolicy.yaml` | Delete — obsidian-livesync was replaced by Syncthing. |
-| Empty overlay dirs | `_lib/applications/wallabag/overlays/{production,staging}` | Either populate when those envs exist, or drop until then. |
-| Placeholder cluster | `_clusters/production/` (config but no apps) | Leave as-is until prod promotion, but be aware it's a stub. |
-| README drift | `README.md` | Badges: Talos `v1.11.5`→`v1.13.0`, k8s `v1.34.0`→`v1.35.0`, flux `v2.6.4`→`v2.7.5`. "Wallabag — Prod" is wrong (dev-only). "Homepage / IT-Tools — Inactive" rows are stale. |
-| Idle operators | `mariadb-operator` (+crds), `redis-operator` | Decide keep-for-future vs. remove. If removing mariadb: also drop `global/crds/mariadb-operator-crds` and the `_lib/controllers/mariadb-operator` entry. |
-| Idle MariaDB/Redis CRDs in `global/crds` | `global/crds/crds-cnpg.yaml` is used; mariadb CRDs aren't | Tied to the line above. |
+| Hetzner/public-cloud dirs (abandoned) | `_lib/controllers/hetzner`, `_lib/controllers/hcloud-ccm`, `_lib/networking/hetzner`, `_lib/storage/hetzner`, `_lib/storage/hetzner-csi` | ✅ Removed (working tree). Not referenced by any cluster Kustomization. |
+| Stale Cilium policy | `_lib/security/cilium-network-policies/obsidian-couchdb-networkpolicy.yaml` | ✅ Removed (working tree). |
+| Wallabag manifests | `_lib/applications/wallabag/` | ✅ Removed 2026-05-14 (archived to `_docs/archive/wallabag/`). Cluster Kustomization entry removed from `_clusters/dev/cluster.yaml`. |
+| Placeholder cluster | `_clusters/production/` (config but no apps) | Leave as-is until prod promotion, but be aware it's a stub. Prod-only `wildcard-tls` against `letsencrypt-production` (see C-2) lands here. |
+| README drift | `README.md` | ✅ Refreshed. Badges bumped (Talos `v1.13.0`, k8s `v1.35.0`, flux `v2.7.5`). Applications table swapped Wallabag/Homepage/IT-Tools for FreshRSS + Syncthing. MariaDB architecture badge dropped (operator removed); CloudNativePG added. `kubeop` examples updated to freshrss/syncthing. |
+| Idle operators | `mariadb-operator`, `redis-operator` | ✅ Removed. Both fully orphaned post-wallabag; zero CRs verified live across all kinds before removal. `_lib/controllers/{mariadb-operator,redis-operator}/` deleted; entries removed from `_lib/controllers/kustomization.yaml`. **Note:** the review's reference to `global/crds/mariadb-operator-crds` was wrong — mariadb CRDs ship from the operator chart (`crds.enabled: true`) and are deleted by `helm uninstall` on prune. |
 
 ### Terraform / IaC
 
@@ -159,16 +162,15 @@ Net-new infra it would require: MinIO, Meilisearch, NATS, Ollama (CPU→GPU), Is
 
 In order, cut at natural stopping points:
 
-1. **C-2** — flip the wildcard cert to `letsencrypt-production` (1-line, safe now).
-2. **H-1 closeout** — label the wallabag namespace; fix the freshrss `${GATEWAY_NAME}` inconsistency.
-3. **Hygiene batch** — delete the Hetzner dirs + the stale obsidian-couchdb policy; decide on mariadb/redis operators; refresh README badges. Low-risk, clears noise.
-4. **H-4 + R-1 + R-6/R-7** — ResourceQuota/LimitRange + PodDisruptionBudget + probes + grace periods, per app namespace, one PR per app. Pairs cleanly.
-5. **H-3** — enable Falco; verify the eBPF driver on Talos and the ServiceMonitor scrape.
-6. **O-4** — K8s Warning events → Loki via Alloy (check RBAC first). Highest ROI of the observability follow-ups.
-7. **H-2 / O-8** — default-deny CiliumNetworkPolicy + per-app allow rules. Biggest single piece of remaining security work.
-8. **H-5** — Trivy operator.
-9. **O-5 / O-6 / O-7** — gateway hardening, posture-scan CronJobs, Alertmanager routing.
-10. (Parallel, low-priority) **Terraform R1/R2/R7** — batch for the next reprovision; **R-8** Redis decision; **notes-backup → TrueNAS cron**; **BIOS power-loss** check.
+1. **Hygiene batch** — ✅ Landed (working tree, awaiting commit): Hetzner dirs + stale obsidian-couchdb policy deleted; `mariadb-operator` + `redis-operator` removed; README badges + applications table refreshed.
+2. **H-1 side-fix + R-7 freshrss** — switch `_lib/applications/freshrss/base/namespace.yaml` from hard-coded `dev-app-gateway` to `${GATEWAY_NAME}`; add `terminationGracePeriodSeconds: 30–60` to the freshrss Deployment. Single small PR. (C-2 dropped: staging issuer is intentional for the dev cluster; prod gets its own `letsencrypt-production` wildcard at prod bring-up.)
+3. **H-4 + R-1** — ResourceQuota/LimitRange + PodDisruptionBudget per app namespace (freshrss, syncthing), one PR per app.
+4. **H-3** — enable Falco; verify the eBPF driver on Talos and the ServiceMonitor scrape.
+5. **O-4** — K8s Warning events → Loki via Alloy (check RBAC first). Highest ROI of the observability follow-ups.
+6. **H-2 / O-8** — default-deny CiliumNetworkPolicy + per-app allow rules; delete the stale obsidian-couchdb policy in the same PR. Biggest single piece of remaining security work.
+7. **H-5** — Trivy operator.
+8. **O-5 / O-6 / O-7** — gateway hardening, posture-scan CronJobs, Alertmanager routing.
+9. (Parallel, low-priority) **Terraform R1/R2/R7** — batch for the next reprovision; **notes-backup → TrueNAS cron**; **BIOS power-loss** check.
 
 ---
 
@@ -178,14 +180,14 @@ In order, cut at natural stopping points:
 |------|----------------|
 | `_clusters/dev/cluster.yaml` | 15-Kustomization DAG; `observability` layer; per-app application Kustomizations |
 | `_clusters/dev/config/cluster-configs.yaml` | `cluster-config` ConfigMap — app versions, subdomains, `GATEWAY_NAME`, storage params |
-| `_lib/networking/gateway/tls.yaml` | Line 10: still `letsencrypt-staging` (C-2) |
-| `_lib/applications/wallabag/base/namespace.yaml` | Missing `home-0ps.com/policy-target` + `${GATEWAY_NAME}` labels (H-1) |
+| `_lib/networking/gateway/tls.yaml` | Line 10: `letsencrypt-staging` — **intentional for dev** (C-2). Prod cluster will declare its own `wildcard-tls` against `letsencrypt-production`. |
 | `_lib/applications/freshrss/base/namespace.yaml` | Hard-codes `dev-app-gateway` instead of `${GATEWAY_NAME}` (H-1 side fix) |
-| `_lib/applications/wallabag/base/deployment.yaml` | Redis env wiring with no Redis backend (R-8); no probes / grace period (R-6/R-7) |
+| `_lib/applications/freshrss/base/deployment.yaml` | Needs `terminationGracePeriodSeconds` (R-7) |
 | `_lib/security/kustomization.yaml` | `kyverno-policies` on; `cilium-network-policies`, `falco-rules`, `trivy` commented (H-2/H-3/H-5) |
-| `_lib/controllers/kustomization.yaml` | `falco` commented (H-3); `hetzner`/`hcloud-ccm` subdirs are dead |
+| `_lib/controllers/kustomization.yaml` | `falco` commented (H-3); `mariadb-operator` + `redis-operator` entries removable; `hetzner`/`hcloud-ccm` subdirs are dead |
 | `_lib/security/kyverno-policies/` | `app-clusterpolicy.yaml` (Audit, namespace-scoped) + `tailscale-privileged-allowlist.yaml` (Enforce) |
-| `_lib/security/cilium-network-policies/obsidian-couchdb-networkpolicy.yaml` | Stale — for a service replaced by Syncthing (cleanup) |
+| `_lib/security/cilium-network-policies/obsidian-couchdb-networkpolicy.yaml` | Stale — for a service replaced by Syncthing (cleanup, bundle with H-2) |
+| `_docs/archive/wallabag/` | Archived manifests from the 2026-05-14 spin-down (for possible restore) |
 | `_lib/observability/` | kube-prometheus-stack / tempo / alloy / scrape-configs / tailscale-egress — Phase 0 (complete) |
 | `_lib/observability/alloy/configmap.yaml` | Where `loki.source.kubernetes_events` goes (O-4) |
 | `_lib/controllers/{hetzner,hcloud-ccm}`, `_lib/networking/hetzner`, `_lib/storage/{hetzner,hetzner-csi}` | Abandoned public-cloud dirs (cleanup) |

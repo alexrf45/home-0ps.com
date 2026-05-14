@@ -62,11 +62,21 @@ spec:
           group_interval: 5m
           repeat_interval: 12h
           routes:
+            # Synthetic / heartbeat alerts shipped by kube-prometheus-stack
+            # that are not meant for humans: Watchdog always fires (deadman
+            # snitch), InfoInhibitor is severity=none and exists solely to
+            # inhibit info alerts via the inhibit_rule below.
             - matchers:
                 - alertname = "Watchdog"
               receiver: "null"
             - matchers:
+                - alertname = "InfoInhibitor"
+              receiver: "null"
+            - matchers:
                 - severity = "info"
+              receiver: "null"
+            - matchers:
+                - severity = "none"
               receiver: "null"
             - matchers:
                 - severity = "critical"
@@ -84,6 +94,11 @@ spec:
             target_matchers:
               - severity = "warning"
             equal: ["alertname", "namespace"]
+          - source_matchers:
+              - alertname = "InfoInhibitor"
+            target_matchers:
+              - severity = "info"
+            equal: ["namespace"]
         receivers:
           - name: "null"
           - name: slack-critical

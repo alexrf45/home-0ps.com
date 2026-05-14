@@ -20,8 +20,6 @@ data:
   ALLOW_INSECURE: "true"
   GATEWAY_NAME: "dev-app-gateway"
   #applications
-  WALLABAG_VERSION: "2.6.14"
-  WALLABAG_SUBDOMAIN: "dev.int.wallabag"
   FRESHRSS_VERSION: "1.27.0-alpine"
   FRESHRSS_SUBDOMAIN: "dev.int.freshrss"
   FRESHRSS_PVC_NAME: "dev-freshrss-pvc"

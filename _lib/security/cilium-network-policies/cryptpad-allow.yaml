@@ -1,0 +1,51 @@
+---
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: cryptpad-allow
+  labels:
+    home-0ps.com/policy-target: application
+    app: cryptpad
+spec:
+  description: |
+    Allow rules for the cryptpad app pod. Two HTTPRoutes (main + sandbox)
+    both attach to the same gateway and target the same backend Service,
+    so the gateway proxy → pod path uses ports 3000 (HTTP) and 3003 (WS).
+    Both are admitted from reserved:ingress; host/remote-node covers
+    kubelet probes.
+  endpointSelector:
+    matchLabels:
+      k8s:io.kubernetes.pod.namespace: cryptpad
+      app: cryptpad
+  ingress:
+    - fromEntities:
+        - ingress
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+            - port: "3003"
+              protocol: TCP
+  egress:
+    # DNS to kube-dns
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Outbound HTTPS — gravatar avatar fetches, future plugin endpoints,
+    # and anything else the app might reach. Tighten via toFQDNs after
+    # L7 DNS policy is enabled.
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

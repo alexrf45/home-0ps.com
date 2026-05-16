@@ -5,3 +5,5 @@ resources:
   - freshrss-default-deny.yaml
   - freshrss-allow.yaml
   - freshrss-cnpg-allow.yaml
+  - cryptpad-default-deny.yaml
+  - cryptpad-allow.yaml

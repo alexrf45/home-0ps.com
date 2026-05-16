@@ -13,3 +13,11 @@ spec:
   dnsNames:
   - "*.home-0ps.com"
   - "home-0ps.com"
+  # CryptPad's two-origin sandbox isolation needs SAN matches for both
+  # of its multi-label hostnames. Tacked onto the wildcard cert (rather
+  # than minted as a separate Cert) because Cilium Gateway's per-SNI
+  # selection across multiple certificateRefs is unreliable — it serves
+  # the first ref for all SNIs. Combining into one SAN cert sidesteps
+  # that entirely.
+  - "dev.int.cryptpad.home-0ps.com"
+  - "dev.int.sandbox.cryptpad.home-0ps.com"

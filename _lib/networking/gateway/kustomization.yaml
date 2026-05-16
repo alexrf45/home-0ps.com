@@ -4,3 +4,4 @@ resources:
   - gatewayclass.yaml
   - gateway.yaml
   - tls.yaml
+  - cryptpad-tls.yaml

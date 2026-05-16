@@ -17,9 +17,16 @@ spec:
     port: 443
     tls:
       mode: Terminate
+      # Multiple certs: Cilium Gateway selects per-SNI. wildcard-tls is
+      # the default (*.home-0ps.com), cryptpad-tls explicitly covers
+      # dev.int.cryptpad.home-0ps.com + dev.int.sandbox.cryptpad.home-0ps.com
+      # so the browser-enforced two-origin sandbox boundary works.
       certificateRefs:
       - kind: Secret
         name: wildcard-tls
+        namespace: networking
+      - kind: Secret
+        name: cryptpad-tls
         namespace: networking
     allowedRoutes:
       namespaces:
@@ -33,4 +40,3 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
-

@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ${CRYPTPAD_DATA_PVC_NAME}
+  namespace: cryptpad
+  labels:
+    app.kubernetes.io/name: cryptpad
+    app.kubernetes.io/instance: cryptpad-${ENVIRONMENT}
+    environment: "${ENVIRONMENT}"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: iscsi
+  resources:
+    requests:
+      storage: 20Gi

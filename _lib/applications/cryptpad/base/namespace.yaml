@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cryptpad
+  labels:
+    app: "cryptpad"
+    home-0ps.com/policy-target: "application"
+    ${GATEWAY_NAME}: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

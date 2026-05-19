@@ -16,9 +16,16 @@ spec:
         namespace: flux-system
       interval: 30m
   install:
+    # Skip pod-ready wait — the chart needs the authentik-env Secret
+    # before pods can start, and that Secret is produced by the
+    # ExternalSecret in the applications layer (which depends on
+    # controllers being Ready). Waiting here deadlocks the whole
+    # controllers Kustomization.
+    disableWait: true
     remediation:
       retries: -1
   upgrade:
+    disableWait: true
     cleanupOnFail: true
     remediation:
       strategy: rollback

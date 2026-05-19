@@ -51,6 +51,17 @@ spec:
               protocol: TCP
             - port: "8000"
               protocol: TCP
+    # CNPG operator → instance-manager status extraction. Without this
+    # the operator can't read /pg/status (port 8000), ConsistentSystemID
+    # stays False, and the cluster can't scale past instance-1.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: database
+            k8s:app.kubernetes.io/name: cloudnative-pg
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
     # Health/readiness/liveness probes are issued by the kubelet,
     # which presents as host / remote-node identity.
     - fromEntities:

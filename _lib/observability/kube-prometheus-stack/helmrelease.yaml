@@ -171,6 +171,49 @@ spec:
         existingSecret: grafana-admin-credentials
         userKey: admin-user
         passwordKey: admin-password
+      # OIDC client credentials sourced from grafana-oidc Secret
+      # (produced by external-secret-oidc.yaml). Grafana picks up
+      # GF_AUTH_GENERIC_OAUTH_* env vars at startup; they take
+      # precedence over any matching grafana.ini values.
+      envValueFrom:
+        GF_AUTH_GENERIC_OAUTH_CLIENT_ID:
+          secretKeyRef:
+            name: grafana-oidc
+            key: client_id
+        GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET:
+          secretKeyRef:
+            name: grafana-oidc
+            key: client_secret
+      grafana.ini:
+        server:
+          root_url: "https://${GRAFANA_SUBDOMAIN}.home-0ps.com/"
+        auth:
+          # Keep the local-admin login form enabled for break-glass
+          # access when the IdP is degraded.
+          disable_login_form: false
+          oauth_auto_login: false
+        auth.generic_oauth:
+          enabled: true
+          name: Authentik
+          icon: signin
+          scopes: "openid email profile offline_access"
+          empty_scopes: false
+          allow_sign_up: true
+          auto_login: false
+          use_pkce: true
+          use_refresh_token: true
+          auth_url: "https://${AUTHENTIK_SUBDOMAIN}.home-0ps.com/application/o/authorize/"
+          token_url: "https://${AUTHENTIK_SUBDOMAIN}.home-0ps.com/application/o/token/"
+          api_url: "https://${AUTHENTIK_SUBDOMAIN}.home-0ps.com/application/o/userinfo/"
+          # JMESPath against the userinfo response. Falls through to
+          # Viewer when the user is in none of the mapped groups.
+          # Requires Authentik provider to emit the `groups` claim —
+          # add the "authentik default OAuth Mapping: OpenID 'groups'"
+          # property mapping to the provider's Scopes list.
+          role_attribute_path: "contains(groups[*], 'Grafana Admins') && 'Admin' || contains(groups[*], 'Grafana Editors') && 'Editor' || 'Viewer'"
+          # Server-admin (super-admin) is not assignable via OIDC.
+          # Promote a user with `grafana-cli` if needed.
+          allow_assign_grafana_admin: false
       persistence:
         enabled: true
         type: pvc

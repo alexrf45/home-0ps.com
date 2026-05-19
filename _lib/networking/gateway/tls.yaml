@@ -24,3 +24,6 @@ spec:
   # Authentik internal hostname — three labels deep, not covered by
   # the *.home-0ps.com wildcard, so it's added as an explicit SAN.
   - "dev.int.auth.home-0ps.com"
+  # Grafana internal hostname — same three-label situation as Authentik;
+  # SAN added once OIDC redirects required a trusted cert chain.
+  - "dev.int.grafana.home-0ps.com"

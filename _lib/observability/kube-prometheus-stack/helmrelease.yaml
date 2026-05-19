@@ -196,7 +196,16 @@ spec:
           enabled: true
           name: Authentik
           icon: signin
-          scopes: "openid email profile offline_access"
+          # entitlements scope follows the canonical Authentik Grafana
+          # integration pattern (per-app role bindings, not global
+          # groups). The Authentik provider must have
+          # "authentik default OAuth Mapping: OpenID 'entitlements'"
+          # added to Selected Scopes, and the Application's
+          # "Application entitlements" tab must define Grafana Admins
+          # / Grafana Editors / Grafana Viewers entitlements bound to
+          # the appropriate users or groups. See
+          # _docs/grafana-oidc-setup.md.
+          scopes: "openid email profile entitlements offline_access"
           empty_scopes: false
           allow_sign_up: true
           auto_login: false
@@ -206,11 +215,8 @@ spec:
           token_url: "https://${AUTHENTIK_SUBDOMAIN}.home-0ps.com/application/o/token/"
           api_url: "https://${AUTHENTIK_SUBDOMAIN}.home-0ps.com/application/o/userinfo/"
           # JMESPath against the userinfo response. Falls through to
-          # Viewer when the user is in none of the mapped groups.
-          # Requires Authentik provider to emit the `groups` claim —
-          # add the "authentik default OAuth Mapping: OpenID 'groups'"
-          # property mapping to the provider's Scopes list.
-          role_attribute_path: "contains(groups[*], 'Grafana Admins') && 'Admin' || contains(groups[*], 'Grafana Editors') && 'Editor' || 'Viewer'"
+          # Viewer when the user is in none of the mapped entitlements.
+          role_attribute_path: "contains(entitlements, 'Grafana Admins') && 'Admin' || contains(entitlements, 'Grafana Editors') && 'Editor' || 'Viewer'"
           # Server-admin (super-admin) is not assignable via OIDC.
           # Promote a user with `grafana-cli` if needed.
           allow_assign_grafana_admin: false

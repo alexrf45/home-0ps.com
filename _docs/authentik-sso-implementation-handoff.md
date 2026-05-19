@@ -182,14 +182,14 @@ These map 1:1 to the in-flight TaskList from the paused session.
 - Add Authentik subdomain to `_clusters/dev/config/cluster-configs.yaml`:
   `AUTHENTIK_SUBDOMAIN: "dev.int.auth"`.
 
-### 8. Document the Authentik recovery flow
+### 8. ~~Document the Authentik recovery flow~~ ✅ DONE (2026-05-18)
 
-- Brief runbook in `_docs/authentik-recovery-runbook.md`.
-- Local admin in 1Password, never federated. Steps: where the password
-  is, how to log in when the IdP is degraded, how to rotate, what
-  Authentik settings to verify after recovery.
-- Plus how to rotate the R2 token (already covered in
-  `terraform/modules/object-storage/README.md` — link to it).
+- Runbook landed at `_docs/authentik-recovery-runbook.md`. Covers
+  local-admin recovery via `akadmin` + `bootstrap_*` fields in 1P,
+  R2 token rotation (links to `terraform/modules/object-storage/README.md`),
+  and the wire-in-on-demand recovery ObjectStore flow (since the
+  dev overlay no longer ships `ob-recovery` — see the updated
+  scope table above).
 
 ### Phase 2 — Grafana OIDC (bonus once Phase 1 is verified)
 
@@ -237,3 +237,89 @@ These map 1:1 to the in-flight TaskList from the paused session.
 - Terraform variable validation supports cross-variable references as
   of Terraform 1.9; the module's `required_version` is `>= 1.10.0`
   which covers this.
+
+---
+
+## 2026-05-17 session update
+
+### Progress since pause
+
+- ~~Fetch R2 permission group UUID~~ ✅ Done. UUID `2efd5506f9c8494dacb1fa10a3e7d5b6` — stable Cloudflare-wide; pinned in `terraform/dev/authentik-object-storage/terraform.tfvars` as `r2_permission_group_id`.
+- ~~Apply `terraform/dev/authentik-object-storage/`~~ ✅ Done. Outputs:
+  - `bucket_name = "dev-authentik-e53522c0"`
+  - `endpoint_url = "https://3b08781f685f3388d4b1a15485e3bc00.r2.cloudflarestorage.com"`
+  - `op_item_title = "authentik-r2-creds"` (HomeLab vault)
+  - `token_expires_on = "2026-11-14T03:25:26Z"` (180 days; lab cadence)
+- ~~Module README scope correction~~ ✅ Done. The required scope for `POST /user/tokens` is **User → API Tokens : Edit**, not Account-scoped. README at `terraform/modules/object-storage/README.md` patched + added a one-time "Enable R2 in dashboard" prerequisite (10042 error if skipped).
+- ~~R2 token rotated mid-session~~ ✅ Done. A buggy `jq` filter leaked the live R2 access key + secret to chat. Token re-issued via `terraform apply -target=module.authentik_backup.cloudflare_api_token.r2_bucket[0] -target=module.authentik_backup.onepassword_item.r2_creds[0]`; leaked pair is dead.
+- ~~Task 5 — Authentik Helm controller manifests~~ ✅ Done. New tree at `_lib/controllers/authentik/`:
+  - `namespace.yaml` (ns `authentik`, label `app: identity`)
+  - `helmrepository.yaml` (`https://charts.goauthentik.io`)
+  - `helmrelease.yaml` (chart `2026.2.3` pinned, `targetNamespace: authentik`, `fullnameOverride: authentik`, `authentik.existingSecret.secretName: authentik-env`, `postgresql.enabled: false`, `geoip.enabled: false`, `ingress.enabled: false`, `serviceMonitor.enabled: false`, `nodeSelector: {node: worker}`)
+  - `kustomization.yaml`
+  - Wired into `_lib/controllers/kustomization.yaml` (added `./authentik` to resources). Manifests yamllint-clean; `kubectl kustomize` renders without name collisions.
+
+### Non-obvious facts captured this session
+
+- **Authentik 2026.x is Redis-less.** The chart dropped the Bitnami Redis subchart — Postgres serves as both DB and Celery broker / cache now. No Redis plumbing needed anywhere in the rollout. Older Authentik docs that mention Redis are stale relative to 2026.x.
+- **Chart auto-creates a Secret from `authentik.*` values unless `existingSecret.secretName` is set.** We set it to `authentik-env` so the chart's auto-secret path is bypassed entirely. Until task 6 creates the `ExternalSecret` that produces `authentik-env`, the server + worker pods will CrashLoop with `secret not found` — expected.
+- **`controllers` Flux Kustomization has `wait: true`** but it waits for HelmRelease `Released: True`, not pod readiness. CrashLooping Authentik pods will NOT block downstream layer reconciliation.
+
+### Resume tomorrow — order of work
+
+1. **Create 1P item `authentik_${ENVIRONMENT}`** in HomeLab vault (schema below). Without this, task 6's `ExternalSecret`s sit in `SecretSyncedError` and the chart pods can't start.
+2. **Decide the 6 open questions in the next subsection.**
+3. Resume with the Claude Code session — I'll write task 6 files (base/, overlays/dev/, CCNPs, SAN extension, `AUTHENTIK_SUBDOMAIN`) once questions are settled.
+4. **You SOPS-encrypt** the two plaintext `ObjectStore` drafts (`ob-archiver.plain.yaml` → `ob-archiver.yaml`, same for recovery). Per the project rule, I write plaintext; you encrypt. Then update `overlays/dev/kustomization.yaml` to reference the encrypted versions.
+5. Task 7 — top-level Flux Kustomization for Authentik in `_clusters/dev/cluster.yaml`. Without this, none of task 6 reconciles.
+6. Task 8 — recovery runbook.
+
+### 1P item `authentik_${ENVIRONMENT}` field schema
+
+Mirror the `freshrss-db-creds` ExternalSecret pattern: one 1P item, multiple fields, single `ExternalSecret` produces one K8s Secret with both CNPG-bootstrap-shape and Authentik-chart-shape keys. The chart consumes `AUTHENTIK_*` keys via `existingSecret.secretName`; CNPG `bootstrap.initdb.secret.name` consumes `username` + `password` from the same Secret (CNPG ignores extra keys).
+
+Pattern reference: `_lib/applications/freshrss/base/secrets.yaml` (the `freshrss-db-creds` block).
+
+| 1P field (`property` in ExternalSecret) | Goes to K8s Secret key | Used by | Notes |
+| --- | --- | --- | --- |
+| `username` | `username` | CNPG bootstrap | Also becomes the Authentik DB owner |
+| `username` | `AUTHENTIK_POSTGRESQL__USER` | Authentik chart | Same value as above, exposed under chart's expected key |
+| `password` | `password` | CNPG bootstrap | Strong random — `op item create` will generate |
+| `password` | `AUTHENTIK_POSTGRESQL__PASSWORD` | Authentik chart | Same value |
+| `database` | `AUTHENTIK_POSTGRESQL__NAME` | Authentik chart | Set to `authentik` |
+| `host` | `AUTHENTIK_POSTGRESQL__HOST` | Authentik chart | `authentik-${ENVIRONMENT}-cluster-rw.authentik.svc` — can be hardcoded in the ExternalSecret template instead of stored in 1P |
+| `port` | `AUTHENTIK_POSTGRESQL__PORT` | Authentik chart | `5432` — same hardcode option |
+| `secret_key` | `AUTHENTIK_SECRET_KEY` | Authentik chart | 60+ random chars. **Never change after first install** (cookie signing + user IDs) |
+| `bootstrap_email` | `AUTHENTIK_BOOTSTRAP_EMAIL` | Authentik chart | Local-admin (`akadmin`) recovery email — never federated |
+| `bootstrap_password` | `AUTHENTIK_BOOTSTRAP_PASSWORD` | Authentik chart | Local-admin initial password — rotate after first login |
+| `bootstrap_token` | `AUTHENTIK_BOOTSTRAP_TOKEN` | Authentik chart | API admin token (optional but useful for terraform-managed app configs later) |
+
+Host + port can be hardcoded in the ExternalSecret's per-key value rather than read from 1P — there's no secret content there, just identifiers. If you'd prefer the freshrss approach of storing host/port in 1P for consistency, add them too.
+
+The existing `authentik-r2-creds` 1P item (created by terraform yesterday) already has the right shape for the Barman ObjectStores: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL`, `AWS_REGION`, `BUCKET_NAME`, `EXPIRES_ON`. No 1P work needed for that one — task 6 just writes an `ExternalSecret` referencing it.
+
+### Task 6 open questions (resolve before scaffolding)
+
+1. **Internal hostname** — `dev.int.auth.home-0ps.com` (matches lab convention; produced by `AUTHENTIK_SUBDOMAIN: "dev.int.auth"`) **or** `auth.dev.int.home-0ps.com` (also mentioned in earlier sections of this doc). My default: `dev.int.auth.home-0ps.com`.
+2. **1P item creation** — confirm you'll create `authentik_${ENVIRONMENT}` per the schema above before resuming, or have me list it in the open-items tracker. (I won't touch 1P myself.)
+3. **CNPG sizing** — `instances: 3`, data 5Gi, WAL 2Gi, daily `ScheduledBackup` at `0 0 * * *`. Same as freshrss/wallabag. OK?
+4. **Bootstrap email value** — local-admin recovery email goes in 1P, never federated. You set the value when creating the 1P item; I just reference the field. (Just confirming the model — no answer needed unless you want a different field name.)
+5. **Chart container port for CCNP allow rule** — Authentik chart's `server` container exposes 9000 (HTTP) by default; CCNP `authentik-allow` will allow ingress from `reserved:ingress` on 9000. I'll render the chart locally with `helm template` first to confirm before writing the CCNP so the policy matches exactly. OK?
+6. **`AUTHENTIK_SUBDOMAIN` substitution scope** — the HTTPRoute (`applications` Flux Kustomization) sees the substitution; the wildcard cert (`networking` Flux Kustomization) doesn't — different `postBuild` scopes. Plan: HTTPRoute uses `${AUTHENTIK_SUBDOMAIN}`, the cert SAN is hardcoded to `dev.int.auth.home-0ps.com`. OK?
+
+### What task 6 will produce (locked-in pre-question scope)
+
+| File | Encryption |
+| --- | --- |
+| `_lib/applications/authentik/base/external-secret.yaml` (the `authentik-env` + the `authentik-r2-creds` ESO refs) | plain |
+| `_lib/applications/authentik/base/httproute.yaml` | plain |
+| `_lib/applications/authentik/base/kustomization.yaml` | plain |
+| `_lib/applications/authentik/overlays/dev/database.yaml` (CNPG `Cluster` + `ScheduledBackup`, mirrors archived wallabag) | plain |
+| `_lib/applications/authentik/overlays/dev/ob-archiver.plain.yaml` (you SOPS-encrypt → `ob-archiver.yaml`) | plain → SOPS |
+| ~~`_lib/applications/authentik/overlays/dev/ob-recovery.plain.yaml`~~ — **deferred to prod overlay.** Dev has no historical data to restore from; when promoting to prod, create `_lib/applications/authentik/overlays/prod/ob-recovery.plain.yaml` pointing at the prod R2 bucket (mirror the archiver shape, swap bucket/endpoint/path), then SOPS-encrypt. | n/a (dev) |
+| `_lib/applications/authentik/overlays/dev/kustomization.yaml` (refs encrypted versions once you've encrypted them) | plain |
+| `_lib/security/cilium-network-policies/authentik-{default-deny,allow,cnpg-allow}.yaml` + kustomization update | plain |
+| `_lib/networking/gateway/tls.yaml` — add `dev.int.auth.home-0ps.com` to wildcard cert SANs | plain |
+| `_clusters/dev/config/cluster-configs.yaml` — add `AUTHENTIK_SUBDOMAIN: "dev.int.auth"` | plain |
+
+Out of scope for task 6 (own tasks): outpost-proxy stub, top-level Flux Kustomization (task 7), recovery runbook (task 8), ServiceMonitor / PrometheusRules (observability follow-up).

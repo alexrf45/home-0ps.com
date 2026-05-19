@@ -30,3 +30,6 @@ rules:
 ignore: |
   .github/
   clusters/*/flux-system/gotk-components.yaml
+  # SOPS-encrypted files emit 4-space indentation that trips the
+  # indentation rule. They're never hand-edited; skip linting them.
+  **/*.enc.yaml

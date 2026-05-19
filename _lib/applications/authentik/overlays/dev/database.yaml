@@ -1,0 +1,55 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: authentik-${ENVIRONMENT}-cluster
+  namespace: authentik
+  labels:
+    app: "authentik"
+    node: "worker"
+    env: "${ENVIRONMENT}"
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.4-6@sha256:4ebb83ad6701cf90cd16f4c0b502676238ffdb1169bf27c5ae60e9a5bdc7b925
+  postgresql:
+    pg_hba:
+      - hostssl authentik authentik 10.43.0.0/16 scram-sha-256
+    parameters:
+      "pgaudit.log": "all, -misc"
+      "pgaudit.log_catalog": "off"
+      "pgaudit.log_parameter": "on"
+      "pgaudit.log_relation": "on"
+  instances: 3
+  bootstrap:
+    initdb:
+      database: authentik
+      owner: authentik
+      secret:
+        name: authentik-env
+  superuserSecret:
+    name: authentik-env
+  storage:
+    size: 5Gi
+    storageClass: local-path
+  walStorage:
+    size: 2Gi
+    storageClass: local-path
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: authentik-dev-cluster-2026
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: authentik-dev-backup
+  namespace: authentik
+spec:
+  schedule: "0 0 0 * * *"
+  cluster:
+    name: authentik-${ENVIRONMENT}-cluster
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  immediate: true

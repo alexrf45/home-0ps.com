@@ -1,0 +1,39 @@
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+    name: authentik-dev-cluster-2026
+    namespace: authentik
+spec:
+    retentionPolicy: 7d
+    configuration:
+        destinationPath: ENC[AES256_GCM,data:MPukKUAItcv1fxr6onjFe6rMpDm+oCOyRa1QD7f7bla7RE9ok/gI/XxtX0CrP5RPIf48J1JA,iv:HcMni51e9+7kGFF13Ll7wZwSRbYYgBoLCGsxmQXJmQE=,tag:uRw6oZ9VScM3XgL2Cj+Xng==,type:str]
+        endpointURL: ENC[AES256_GCM,data:GQejvqxj1X9zyR6jXIg3CdjGS2mSpT5pmV1XGFwspvCFKyvoqAVieZXpGvV6J6Rg8m+NSilq08iwfTtGIt/0ffY=,iv:UBgAnGhNT8mOFZV94unmxUCW/c6LT1mUhUh240CXPBE=,tag:HueejYcAd6FQ49FMocQg2Q==,type:str]
+        s3Credentials:
+            accessKeyId:
+                name: authentik-r2-creds
+                key: AWS_ACCESS_KEY_ID
+            secretAccessKey:
+                name: authentik-r2-creds
+                key: AWS_SECRET_ACCESS_KEY
+            region:
+                name: authentik-r2-creds
+                key: AWS_REGION
+        wal:
+            compression: gzip
+        data:
+            compression: ENC[AES256_GCM,data:siB1+A==,iv:K64KJSjmsI+NBjvnVEQowfaRRcI3qsJs4ET2iRgRKX4=,tag:A1T7DElk1mdLg1t5/kHoXw==,type:str]
+sops:
+    age:
+        - recipient: age1vml3vk5uzyztj96qgz7n0a6w8ynvtmxfarkp0jdl0hvcj003895qcp6z09
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBjR2tLOGU5Skc3VzJRUStQ
+            TENTcjZzd1pUUXRrVkMrNHhaTkJPM1J0OENVCnJHQVMvRldZaVV1S25QdDZrNlFK
+            Q0ZNQmp6eTBON254ZkI1SU9WUUpyL0EKLS0tIEN0ck52T0VEOFpkN09wYXBkNEgx
+            dzNsVndVU2prZURrajdKdFV3blljaGsK5eD1BiZrwmwgrho6Eyo61Y5s1ykpBr55
+            kv6/34Irxmqv7sRQ1huTPX3QQ8vrGElfICr7/eORW+mldHqVKZZFwQ==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-05-19T02:06:44Z"
+    mac: ENC[AES256_GCM,data:vAZEGfTPANezIrpXD29GPuOIrLIaO5OA7dIZNb79WLA8azwrI+6xSWZ2v5lsSawSWLqidbphG0nru6XJJvHz0zQuDNwPihh7WnKVK9oR8CVYi0T3aBLFqkEWPHvpe7XLC2SwGdVu13MkB2pIk1XadBcGszKTl6hSVlXBGDMnb0A=,iv:cFN+f6dUTAoNujg7b9xqf106uACGnVqGgU38jZoMHLU=,tag:fHfhNRIgO1CkS9L2xJL3mw==,type:str]
+    encrypted_regex: ^(data|destinationPath|endpointURL)$
+    version: 3.10.2

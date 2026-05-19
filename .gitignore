@@ -295,3 +295,4 @@ token
 values.yaml.example
 csi-values.yaml
 truenas-credentials-secret.yaml
+ob-archiver.plain.yaml

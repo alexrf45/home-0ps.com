@@ -7,3 +7,6 @@ resources:
   - freshrss-cnpg-allow.yaml
   - cryptpad-default-deny.yaml
   - cryptpad-allow.yaml
+  - authentik-default-deny.yaml
+  - authentik-allow.yaml
+  - authentik-cnpg-allow.yaml

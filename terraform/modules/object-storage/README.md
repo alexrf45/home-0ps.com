@@ -88,6 +88,20 @@ Barman config works against either backend:
 | `EXPIRES_ON` | token RFC3339 expiry | (not set) |
 | `IAM_USER_ARN` | (not set) | IAM user ARN |
 
+## One-time R2 enablement (account-level, not module-level)
+
+The R2 product must be activated in the Cloudflare dashboard before any
+R2 API call will succeed — token scopes alone are not sufficient. If
+the account has never used R2 before, the first apply will fail with:
+
+```
+code 10042: Please enable R2 through the Cloudflare Dashboard.
+```
+
+Fix once per account: Cloudflare dashboard → **R2 Object Storage** →
+**Enable R2** / **Purchase R2** → accept terms. The free tier covers
+homelab usage but billing info has to be on file.
+
 ## Required Cloudflare API token scopes
 
 The token configured in the *calling* root module's `cloudflare` provider
@@ -96,7 +110,7 @@ needs to be able to:
 | Permission | Why |
 | --- | --- |
 | Account → Workers R2 Storage:Edit | Create/delete buckets, set lifecycle |
-| Account → API Tokens:Edit | Mint the per-bucket scoped data-plane token |
+| User → API Tokens:Edit | Mint the per-bucket scoped data-plane token (the create endpoint is `POST /user/tokens`, so the grant is User-scoped, not Account-scoped) |
 | Account → Account Settings:Read | Resolve the account ID |
 
 Keep this token **separate** from the DNS-01 / ExternalDNS token

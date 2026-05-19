@@ -1,0 +1,58 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: authentik
+  namespace: flux-system
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: authentik
+      version: "2026.2.3"
+      sourceRef:
+        kind: HelmRepository
+        name: authentik
+        namespace: flux-system
+      interval: 30m
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: -1
+  targetNamespace: authentik
+  values:
+    fullnameOverride: authentik
+    global:
+      nodeSelector:
+        node: "worker"
+    authentik:
+      enabled: true
+      log_level: info
+      existingSecret:
+        secretName: authentik-env
+      error_reporting:
+        enabled: false
+    server:
+      replicas: 1
+      autoscaling:
+        enabled: false
+      ingress:
+        enabled: false
+      metrics:
+        serviceMonitor:
+          enabled: false
+    worker:
+      replicas: 1
+      autoscaling:
+        enabled: false
+    geoip:
+      enabled: false
+    postgresql:
+      enabled: false
+    prometheus:
+      rules:
+        enabled: false

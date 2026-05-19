@@ -27,6 +27,7 @@ data:
   CRYPTPAD_SUBDOMAIN: "dev.int.cryptpad"
   CRYPTPAD_SANDBOX_SUBDOMAIN: "dev.int.sandbox.cryptpad"
   CRYPTPAD_DATA_PVC_NAME: "dev-cryptpad-data-pvc"
+  AUTHENTIK_SUBDOMAIN: "dev.int.auth"
   #observability
   GRAFANA_SUBDOMAIN: "dev.int.grafana"
 ---

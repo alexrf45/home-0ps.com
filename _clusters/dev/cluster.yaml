@@ -309,36 +309,6 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cryptpad
-  namespace: flux-system
-spec:
-  dependsOn:
-    - name: dns
-    - name: storage
-    - name: networking
-    - name: external-secrets-operator
-    - name: secrets
-    - name: security
-  interval: 10m
-  retryInterval: 1m
-  timeout: 10m0s
-  path: ./_lib/applications/cryptpad/overlays/dev
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: cluster-config
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
   name: authentik
   namespace: flux-system
 spec:

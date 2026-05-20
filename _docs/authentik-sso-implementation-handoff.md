@@ -1,7 +1,20 @@
 # Authentik SSO implementation — session handoff
 
-**Status:** Paused mid-implementation. Resume at the "Next steps" section.
+> **✅ COMPLETE (2026-05-20).** Phases 1–2 are done and verified:
+> Authentik is live on dev as its own Flux Kustomization
+> (`_lib/controllers/authentik/` + `_lib/applications/authentik/`), the R2
+> backup bucket is applied, and **Grafana "Sign in with Authentik" works
+> end-to-end** (final blocker was DNS, not OIDC — see
+> `_docs/grafana-oidc-setup.md` and the CoreDNS split-horizon fix in
+> `terraform/dev/talos-pve-v3.1.0/talos.tf`). Everything below is retained
+> as the historical implementation record — it is **not** a live task list.
+> Remaining SSO-adjacent work is now tracked elsewhere: Cloudflare WAF
+> (`terraform/dev/cloudflare-waf/`, not built), public exposure via
+> Cloudflare Tunnel + forward-auth outposts (future phase), and Homer.
+
+**Status:** ✅ Complete (was: paused mid-implementation 2026-05-16).
 **Date paused:** 2026-05-16
+**Date completed:** 2026-05-20
 **Author:** fr3d (with Claude)
 **Scope:** Phases 1–2 of `_docs/sso-authentik-decision.md` —
 internal-only Authentik on dev + Grafana OIDC.

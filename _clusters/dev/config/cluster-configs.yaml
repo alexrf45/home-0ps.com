@@ -23,10 +23,8 @@ data:
   FRESHRSS_VERSION: "1.27.0-alpine"
   FRESHRSS_SUBDOMAIN: "dev.int.freshrss"
   FRESHRSS_PVC_NAME: "dev-freshrss-pvc"
-  CRYPTPAD_VERSION: "2026.2.2"
-  CRYPTPAD_SUBDOMAIN: "dev.int.cryptpad"
-  CRYPTPAD_SANDBOX_SUBDOMAIN: "dev.int.sandbox.cryptpad"
-  CRYPTPAD_DATA_PVC_NAME: "dev-cryptpad-data-pvc"
+  HOMER_VERSION: "v26.4.2"
+  HOMER_SUBDOMAIN: "dev.int.homer"
   AUTHENTIK_SUBDOMAIN: "dev.int.auth"
   #observability
   GRAFANA_SUBDOMAIN: "dev.int.grafana"

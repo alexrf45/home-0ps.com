@@ -13,17 +13,12 @@ spec:
   dnsNames:
   - "*.home-0ps.com"
   - "home-0ps.com"
-  # CryptPad's two-origin sandbox isolation needs SAN matches for both
-  # of its multi-label hostnames. Tacked onto the wildcard cert (rather
-  # than minted as a separate Cert) because Cilium Gateway's per-SNI
-  # selection across multiple certificateRefs is unreliable — it serves
-  # the first ref for all SNIs. Combining into one SAN cert sidesteps
-  # that entirely.
-  - "dev.int.cryptpad.home-0ps.com"
-  - "dev.int.sandbox.cryptpad.home-0ps.com"
-  # Authentik internal hostname — three labels deep, not covered by
-  # the *.home-0ps.com wildcard, so it's added as an explicit SAN.
+  # Multi-label internal hostnames (three labels deep, e.g. dev.int.X) are
+  # NOT covered by the single-label *.home-0ps.com wildcard, so each is added
+  # as an explicit SAN. They all share this one cert because Cilium Gateway's
+  # per-SNI selection across multiple certificateRefs is unreliable (it serves
+  # the first ref for all SNIs) — one SAN cert sidesteps that.
   - "dev.int.auth.home-0ps.com"
-  # Grafana internal hostname — same three-label situation as Authentik;
-  # SAN added once OIDC redirects required a trusted cert chain.
   - "dev.int.grafana.home-0ps.com"
+  - "dev.int.homer.home-0ps.com"
+  - "dev.int.freshrss.home-0ps.com"

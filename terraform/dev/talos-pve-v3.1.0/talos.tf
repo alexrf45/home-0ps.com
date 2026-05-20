@@ -146,6 +146,52 @@ data "talos_machine_configuration" "controlplane" {
               labels:
                 pod-security.kubernetes.io/enforce: "privileged"
                 app: "storage"
+        # Overrides the Talos-generated kube-system/coredns ConfigMap to add a
+        # split-horizon server block: internal *.home-0ps.com names are forwarded
+        # to the UniFi resolver (var.nameservers.secondary). Without this, in-cluster
+        # back-channels (e.g. Grafana OIDC token exchange to Authentik) hit the public
+        # upstream first, which NXDOMAINs internal-only records. Re-sync the .:53 block
+        # with the upstream default on Talos version bumps.
+        - name: coredns-custom
+          contents: |
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: coredns
+              namespace: kube-system
+            data:
+              Corefile: |
+                .:53 {
+                    errors
+                    health {
+                        lameduck 5s
+                    }
+                    ready
+                    log . {
+                        class error
+                    }
+                    prometheus :9153
+                    kubernetes cluster.local in-addr.arpa ip6.arpa {
+                        pods insecure
+                        fallthrough in-addr.arpa ip6.arpa
+                        ttl 30
+                    }
+                    forward . /etc/resolv.conf {
+                       max_concurrent 1000
+                    }
+                    cache 30 {
+                       disable success cluster.local
+                       disable denial cluster.local
+                    }
+                    loop
+                    reload
+                    loadbalance
+                }
+                home-0ps.com:53 {
+                    errors
+                    cache 30
+                    forward . ${var.nameservers.secondary}
+                }
     EOT
     ,
     yamlencode({

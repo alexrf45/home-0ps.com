@@ -296,3 +296,7 @@ values.yaml.example
 csi-values.yaml
 truenas-credentials-secret.yaml
 ob-archiver.plain.yaml
+
+# MkDocs build output + local docs venv
+/site/
+.venv-docs/

@@ -1,0 +1,15 @@
+# Keep the docs-site image build context small — only _docs/, mkdocs.yml and
+# requirements-docs.txt are needed.
+.git/
+.github/
+terraform/
+_clusters/
+_lib/
+global/
+_hack/
+_templates/
+site/
+.venv-docs/
+_docs/site-mkdocs/
+**/__pycache__/
+*.pyc

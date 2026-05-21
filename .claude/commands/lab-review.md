@@ -1,10 +1,10 @@
-Produce a fresh, dated state-of-the-lab review at `_docs/home-0ps-review-<YYYY-MM-DD>.md`, structured like the most recent existing review, so the user can hop back into the project with a clear punch list of open items.
+Produce a fresh, dated state-of-the-lab review at `_docs/reviews/home-0ps-review-<YYYY-MM-DD>.md`, structured like the most recent existing review, so the user can hop back into the project with a clear punch list of open items.
 
 This is the rolling deployment/migration tracker. Each run supersedes the last review doc (don't delete the old one — it's the historical record).
 
 ## Steps
 
-1. **Find the baseline.** `ls _docs/home-0ps-review-*.md` — read the newest one. Also skim any other `_docs/*.md` it references (observability plan, self-deployment, thoth, migration guide) so you carry forward their open items too. The baseline's structure is the template for the new doc.
+1. **Find the baseline.** `ls _docs/reviews/home-0ps-review-*.md` — read the newest one. For carried-forward context, the canonical docs now live in the restructured tree: ADRs in `_docs/decisions/`, the patterns/lessons in `_docs/guides/best-practices.md`, the narrative in `_docs/journey.md`, and long-form originals in `_docs/archive/source-docs/`. The baseline's structure is the template for the new doc.
 
 2. **Survey the repo state** (read, don't guess):
    - `git log --since="<date of last review>" --oneline --no-merges` and a rough count — what's the headline work since the baseline?
@@ -29,7 +29,7 @@ This is the rolling deployment/migration tracker. Each run supersedes the last r
    Flag: anything not Ready, the wildcard cert's issuer (staging vs prod), idle operators (deployed with zero CRs), high restart counts, unexpected pods.
    If a wrapper isn't sourced (`_kubeop_cluster_for_env: command not found`), `source ~/.zsh/kubeop.sh` first. If the cluster is unreachable, say so and produce the review from repo state alone.
 
-4. **Write `_docs/home-0ps-review-<today>.md`.** Mirror the baseline's sections. At minimum:
+4. **Write `_docs/reviews/home-0ps-review-<today>.md`.** Mirror the baseline's sections. At minimum:
    - **Executive Summary** — headline change since the baseline; what moved, what didn't; recommended next sprint in one sentence.
    - **What Changed Since `<baseline date>`** — table: area · old state · new state.
    - **Live Cluster Snapshot** — compact dump of the survey above, with the notable items called out.

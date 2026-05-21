@@ -28,9 +28,9 @@ Two coupled issues with the current data tier:
    at all**. The recovery story for the one DB that is backed up requires
    pulling data back down from R2.
 
-The operator's stated preference: *"I'd rather define my storage once, deploy
+The operator's stated preference: _"I'd rather define my storage once, deploy
 the DB to it, and tear the app down at will and point it back to the volumes
-each time. My data should not have to come down from an S3 bucket."*
+each time. My data should not have to come down from an S3 bucket."_
 
 That is fundamentally a **static-volume** model with **local** durability and
 recovery — which `local-path` + Barman/R2 is the opposite of.
@@ -44,7 +44,7 @@ For every CNPG database in the lab:
    are the recovery layer.
 2. **One pre-created TrueNAS zvol per database.** WAL lives inside the main
    PGDATA volume (drop the separate `walStorage`), so each DB maps to exactly
-   **one zvol = one PV = one PVC**.
+   **one zvol = one PV = one PVC**. **_zvols have been created_**
 3. **Static PV, `reclaimPolicy: Retain`, bound by CNPG via `pvcTemplate`.**
    The volume is defined once (zvol + PV manifest checked into the repo). CNPG
    binds its single instance PVC to that PV.
@@ -54,16 +54,16 @@ For every CNPG database in the lab:
    from S3.
 5. **Retire R2/S3 from the backup path.** Drop the Authentik Barman/R2
    `ObjectStore`; `terraform destroy` the dead wallabag AWS S3 stack; destroy
-   the Authentik R2 bucket once VolumeSnapshot backups are proven.
+   the Authentik R2 bucket once VolumeSnapshot backups are proven. **_terraform resources have been destroyed_**
 
 ## Why single-instance is the right call here
 
-| Concern | Reasoning |
-| --- | --- |
-| **Matches the mental model** | CNPG owns one PVC per replica (`<cluster>-N`). With 3 instances, "define storage once" really means "define 3 zvols and pre-bind each to its replica's PVC." With 1 instance there is exactly one zvol per DB — literally what the operator asked for. |
-| **HA was never load-bearing here** | This is a single Proxmox rack, one TrueNAS box. A 3-node Postgres quorum doesn't survive the failure domains that actually threaten the lab (the NAS, the rack, the house). It mostly bought zero-downtime pod reschedules. |
-| **Durability moves to the right layer** | ZFS RAID protects against disk failure; ZFS snapshots protect against logical corruption / fat-finger. That is a stronger and more local guarantee than 3 ephemeral local-path copies. |
-| **Simpler teardown/redeploy** | One CR, one PVC, one PV, one zvol. The "tear down and re-point" loop is trivial to reason about (see workflow below). |
+| Concern                                 | Reasoning                                                                                                                                                                                                                                              |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Matches the mental model**            | CNPG owns one PVC per replica (`<cluster>-N`). With 3 instances, "define storage once" really means "define 3 zvols and pre-bind each to its replica's PVC." With 1 instance there is exactly one zvol per DB — literally what the operator asked for. |
+| **HA was never load-bearing here**      | This is a single Proxmox rack, one TrueNAS box. A 3-node Postgres quorum doesn't survive the failure domains that actually threaten the lab (the NAS, the rack, the house). It mostly bought zero-downtime pod reschedules.                            |
+| **Durability moves to the right layer** | ZFS RAID protects against disk failure; ZFS snapshots protect against logical corruption / fat-finger. That is a stronger and more local guarantee than 3 ephemeral local-path copies.                                                                 |
+| **Simpler teardown/redeploy**           | One CR, one PVC, one PV, one zvol. The "tear down and re-point" loop is trivial to reason about (see workflow below).                                                                                                                                  |
 
 **Accepted trade-off:** brief downtime during pod restarts, node failure, and
 Postgres minor-version upgrades (no standby to fail over to). For Authentik
@@ -79,10 +79,10 @@ Created under the existing iSCSI dataset parent
 exposed as iSCSI targets on `192.168.20.106:3260`. Naming mirrors the proven
 freshrss-app pattern (`dev-freshrss-pv` → zvol `dev-freshrss-pvc`):
 
-| Database | zvol / volumeHandle | IQN | Size |
-| --- | --- | --- | --- |
-| authentik | `dev-authentik-db` | `iqn.2005-10.org.freenas.ctl:dev-authentik-db` | 10Gi |
-| freshrss | `dev-freshrss-db` | `iqn.2005-10.org.freenas.ctl:dev-freshrss-db` | 10Gi |
+| Database  | zvol / volumeHandle | IQN                                            | Size |
+| --------- | ------------------- | ---------------------------------------------- | ---- |
+| authentik | `dev-authentik-db`  | `iqn.2005-10.org.freenas.ctl:dev-authentik-db` | 10Gi |
+| freshrss  | `dev-freshrss-db`   | `iqn.2005-10.org.freenas.ctl:dev-freshrss-db`  | 10Gi |
 
 (Sizes bumped from 5Gi to fold WAL in. Tune to taste; `allowVolumeExpansion`
 is on.)
@@ -106,7 +106,7 @@ spec:
   csi:
     driver: freenas-api-iscsi
     fsType: ext4
-    volumeHandle: dev-authentik-db        # must match the TrueNAS zvol name
+    volumeHandle: dev-authentik-db # must match the TrueNAS zvol name
     volumeAttributes:
       lun: "0"
       node_attach_driver: iscsi
@@ -120,6 +120,8 @@ spec:
 Single instance, no separate `walStorage`, `pvcTemplate.volumeName` pins the
 one PVC (`<cluster>-1`) to the static PV:
 
+**_update cnpg cluster postgresl version to 18 moving forward_**
+
 ```yaml
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
@@ -130,14 +132,15 @@ spec:
   instances: 1
   imageName: ghcr.io/cloudnative-pg/postgresql:17.4-6@sha256:...
   bootstrap:
-    initdb: { database: authentik, owner: authentik, secret: { name: authentik-env } }
+    initdb:
+      { database: authentik, owner: authentik, secret: { name: authentik-env } }
   storage:
     size: 10Gi
     pvcTemplate:
       accessModes: [ReadWriteOnce]
       storageClassName: iscsi
       resources: { requests: { storage: 10Gi } }
-      volumeName: dev-authentik-db-pv     # explicit static bind
+      volumeName: dev-authentik-db-pv # explicit static bind
   # NOTE: no walStorage — WAL stays inside PGDATA (one volume per DB)
 ```
 
@@ -173,7 +176,7 @@ TrueNAS, no object storage involved.
 - **Soft teardown (the normal case): delete the `Cluster` CR only.** CNPG does
   **not** garbage-collect instance PVCs on cluster deletion (consistent with
   the existing "CNPG bootstrap is one-shot" runbook — PVCs are deleted by hand
-  when you *want* a fresh start). The PVC keeps its CNPG annotations; the PV and
+  when you _want_ a fresh start). The PVC keeps its CNPG annotations; the PV and
   zvol persist. Re-apply the same `Cluster` manifest → CNPG **re-adopts** the
   existing PVC and starts Postgres on the existing PGDATA — **no `initdb`,
   data intact.** This is the "tear down at will, point back at the volume" loop.
@@ -240,14 +243,14 @@ but scheduled backups can't — so sequence snapshot infra **before** retiring R
 2026-05-16. This document **reverses that for the CNPG backup path** in favor of
 local CSI snapshots, driven by the privacy/self-hosting requirement ("data
 shouldn't come from S3"). The reusable `terraform/modules/object-storage/`
-module is **kept** — it's still the right tool if a *future* workload genuinely
+module is **kept** — it's still the right tool if a _future_ workload genuinely
 needs off-site object storage (e.g. an offsite DR copy, Loki archive, Velero).
 The R2 decision doc should be marked **superseded for CNPG backups** with a
 pointer here.
 
 > Open question for the operator: do you want **zero** off-site backup (pure
 > local snapshots — a NAS loss = total loss), or a thin **offsite DR** copy
-> (e.g. periodic `zfs send` to Backblaze B2, or keep a *monthly* Barman dump on
+> (e.g. periodic `zfs send` to Backblaze B2, or keep a _monthly_ Barman dump on
 > R2) as a disaster backstop? The decision above assumes local-only; the offsite
 > backstop is a deliberate add-on if you want it.
 

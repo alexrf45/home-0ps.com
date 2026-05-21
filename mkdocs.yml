@@ -1,0 +1,101 @@
+site_name: home-0ps
+site_description: GitOps Kubernetes home lab — apps, infrastructure, decisions, and roadmap.
+site_author: fr3d
+docs_dir: _docs
+site_dir: site
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+
+# Keep the local throwaway scaffold out of the build.
+exclude_docs: |
+  site-mkdocs/
+
+# Built but intentionally not in the top nav (reachable by direct link).
+not_in_nav: |
+  /archive/
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  nav:
+    not_found: warn
+  links:
+    not_found: warn
+    anchors: warn
+
+nav:
+  - Home: README.md
+  - Journey: journey.md
+  - Apps:
+      - Authentik (SSO): apps/authentik.md
+      - FreshRSS: apps/freshrss.md
+      - Homer: apps/homer.md
+  - Infrastructure:
+      - Storage: infra/storage.md
+      - Observability: infra/observability.md
+      - Networking: infra/networking.md
+      - DNS: infra/dns.md
+      - Secrets & PKI: infra/secrets-pki.md
+  - Best Practices: guides/best-practices.md
+  - Decisions:
+      - "ADR-0001 · SSO with Authentik": decisions/0001-sso-authentik.md
+      - "ADR-0002 · Object storage (R2)": decisions/0002-object-storage-r2.md
+      - "ADR-0003 · CNPG local snapshots": decisions/0003-cnpg-local-snapshots.md
+      - "ADR-0004 · GPU VFIO passthrough": decisions/0004-gpu-vfio-passthrough.md
+      - "ADR-0005 · Thoth knowledge app": decisions/0005-thoth-knowledge-app.md
+  - Roadmap: roadmap.md
+  - Status: status.md
+  - Reviews:
+      - "2026-05-20": reviews/home-0ps-review-2026-05-20.md
+      - "2026-05-11": reviews/home-0ps-review-2026-05-11.md
+      - "2026-04-27": reviews/home-0ps-review-2026-04-27.md

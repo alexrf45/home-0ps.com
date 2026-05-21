@@ -1,0 +1,91 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docs-site
+  namespace: docs-site
+  labels:
+    app.kubernetes.io/name: docs-site
+    app.kubernetes.io/instance: docs-site-${ENVIRONMENT}
+    app.kubernetes.io/version: "${DOCS_VERSION}"
+    environment: "${ENVIRONMENT}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docs-site
+  template:
+    metadata:
+      labels:
+        app: docs-site
+        node: worker
+        env: "${ENVIRONMENT}"
+        app.kubernetes.io/name: docs-site
+        app.kubernetes.io/instance: docs-site-${ENVIRONMENT}
+        app.kubernetes.io/version: "${DOCS_VERSION}"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: docs-site
+          image: ghcr.io/alexrf45/home-0ps-docs:${DOCS_VERSION}
+          imagePullPolicy: Always
+          securityContext:
+            # runAsUser set explicitly: the Kyverno add-default-securitycontext
+            # policy mutates an unset runAsUser to 65534; the nginx-unprivileged
+            # image's content + cache dirs are owned by uid 101.
+            runAsNonRoot: true
+            runAsUser: 101
+            runAsGroup: 101
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          volumeMounts:
+            # nginx-unprivileged writes its pid + caches under these paths;
+            # readOnlyRootFilesystem requires them as emptyDirs.
+            - name: tmp
+              mountPath: /tmp
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}

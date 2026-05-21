@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: docs-site
+  labels:
+    app: "docs-site"
+    home-0ps.com/policy-target: "application"
+    ${GATEWAY_NAME}: "true"
+    # Static MkDocs site served by unprivileged nginx — satisfies restricted PSA.
+    pod-security.kubernetes.io/enforce: "restricted"
+    pod-security.kubernetes.io/warn: "restricted"

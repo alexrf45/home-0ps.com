@@ -1,0 +1,24 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: docs-site-internal
+  namespace: docs-site
+  labels:
+    app.kubernetes.io/name: docs-site
+    app.kubernetes.io/instance: docs-site-${ENVIRONMENT}
+    environment: "${ENVIRONMENT}"
+spec:
+  parentRefs:
+    - name: ${GATEWAY_NAME}
+      namespace: networking
+  hostnames:
+    - "${DOCS_SUBDOMAIN}.home-0ps.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: docs-site
+          port: 8080

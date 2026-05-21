@@ -10,3 +10,5 @@ resources:
   - authentik-cnpg-allow.yaml
   - homer-default-deny.yaml
   - homer-allow.yaml
+  - docs-site-default-deny.yaml
+  - docs-site-allow.yaml

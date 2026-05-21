@@ -26,6 +26,8 @@ data:
   HOMER_VERSION: "v26.4.2"
   HOMER_SUBDOMAIN: "dev.int.homer"
   AUTHENTIK_SUBDOMAIN: "dev.int.auth"
+  DOCS_VERSION: "dev-latest"
+  DOCS_SUBDOMAIN: "dev.int.docs"
   #observability
   GRAFANA_SUBDOMAIN: "dev.int.grafana"
 ---

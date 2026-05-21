@@ -1,0 +1,19 @@
+---
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: docs-site-default-deny
+  labels:
+    home-0ps.com/policy-target: application
+    app: docs-site
+spec:
+  description: |
+    Default-deny ingress + egress for every pod in the docs-site namespace.
+    The companion CCNP (docs-site-allow) carves out the needed exceptions.
+  endpointSelector:
+    matchLabels:
+      k8s:io.kubernetes.pod.namespace: docs-site
+  ingress:
+    - fromEndpoints: []
+  egress:
+    - toEndpoints: []

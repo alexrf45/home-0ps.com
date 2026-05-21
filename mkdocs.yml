@@ -54,6 +54,15 @@ markdown_extensions:
 
 plugins:
   - search
+  - macros:
+      module_name: main
+      # Opt-in only: pages must set `render_macros: true` in front matter.
+      # Keeps Jinja away from archived docs that contain literal {{ }} / {% %}.
+      render_by_default: false
+      on_error_fail: true
+
+extra_javascript:
+  - assets/js/status.js
 
 # Keep the local throwaway scaffold out of the build.
 exclude_docs: |

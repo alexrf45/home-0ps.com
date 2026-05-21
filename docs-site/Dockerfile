@@ -5,7 +5,7 @@ FROM python:3.13-slim AS build
 WORKDIR /docs
 COPY requirements-docs.txt ./
 RUN pip install --no-cache-dir -r requirements-docs.txt
-COPY mkdocs.yml ./
+COPY mkdocs.yml main.py ./
 COPY _docs/ ./_docs/
 RUN mkdocs build --strict
 

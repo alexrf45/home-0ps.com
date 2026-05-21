@@ -2,4 +2,5 @@
 # Used by the local build, CI, and the docs-site container image.
 mkdocs==1.6.1
 mkdocs-material==9.7.6
+mkdocs-macros-plugin==1.5.0
 pymdown-extensions==10.21.3

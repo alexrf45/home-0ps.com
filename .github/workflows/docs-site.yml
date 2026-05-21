@@ -8,6 +8,7 @@ on:
     paths:
       - "_docs/**"
       - "mkdocs.yml"
+      - "main.py"
       - "requirements-docs.txt"
       - "docs-site/**"
       - ".github/workflows/docs-site.yml"
@@ -43,6 +44,7 @@ jobs:
             type=sha,prefix=,format=short
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -52,3 +54,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Report pushed digest
+        run: |
+          echo "pushed-digest: ${{ steps.build.outputs.digest }}"
+          echo "### docs-site image" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`ghcr.io/${{ github.repository_owner }}/home-0ps-docs@${{ steps.build.outputs.digest }}\`" >> "$GITHUB_STEP_SUMMARY"

@@ -7,7 +7,6 @@ metadata:
   labels:
     app.kubernetes.io/name: docs-site
     app.kubernetes.io/instance: docs-site-${ENVIRONMENT}
-    app.kubernetes.io/version: "${DOCS_VERSION}"
     environment: "${ENVIRONMENT}"
 spec:
   replicas: 1
@@ -22,7 +21,6 @@ spec:
         env: "${ENVIRONMENT}"
         app.kubernetes.io/name: docs-site
         app.kubernetes.io/instance: docs-site-${ENVIRONMENT}
-        app.kubernetes.io/version: "${DOCS_VERSION}"
     spec:
       securityContext:
         runAsNonRoot: true
@@ -33,8 +31,10 @@ spec:
           type: RuntimeDefault
       containers:
         - name: docs-site
-          image: ghcr.io/alexrf45/home-0ps-docs:${DOCS_VERSION}
-          imagePullPolicy: Always
+          # Digest-pinned (immutable). Renovate's kubernetes manager tracks the
+          # dev-latest tag and opens a PR to bump this digest when CI rebuilds.
+          image: ghcr.io/alexrf45/home-0ps-docs:dev-latest@sha256:8d99f7bce3dbb2802791fbd824001605d2534d06b9dc8c9d2a96ce4a94327a3f
+          imagePullPolicy: IfNotPresent
           securityContext:
             # runAsUser set explicitly: the Kyverno add-default-securitycontext
             # policy mutates an unset runAsUser to 65534; the nginx-unprivileged

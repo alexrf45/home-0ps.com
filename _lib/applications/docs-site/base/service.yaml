@@ -7,7 +7,6 @@ metadata:
   labels:
     app.kubernetes.io/name: docs-site
     app.kubernetes.io/instance: docs-site-${ENVIRONMENT}
-    app.kubernetes.io/version: "${DOCS_VERSION}"
 spec:
   type: ClusterIP
   ports:
